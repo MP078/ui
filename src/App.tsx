@@ -18,7 +18,7 @@ function App() {
       {!isHomePage && <Header />}
       <main>
         <Routes>
-          <Route path="/" element={<Feed />} />
+          <Route path="/" element={<Homepage />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/feed" element={<Feed />} />
           <Route path="/profile/*" element={<Profile />} />
