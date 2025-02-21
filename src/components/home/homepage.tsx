@@ -1,9 +1,7 @@
-import { useRouter } from 'next/router';
 import { Search, Star, User, Users, MapPin, Twitter, Facebook, Instagram } from 'lucide-react';
 import { Button } from '../ui/button';
 
 export function Homepage() {
-  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-brand-beige">
       {/* Header */}
@@ -16,10 +14,7 @@ export function Homepage() {
               <div className="w-2 h-2 bg-brand-orange rounded-full ml-1"></div>
             </div>
             <nav className="hidden md:flex space-x-6">
-                <a 
-                  onClick={() => navigate('/feed')} 
-                  className="cursor-pointer text-brand-dark-gray hover:text-brand-orange transition-colors"
-                >Home</a>
+              <a href="#" className="text-brand-dark-gray hover:text-brand-orange transition-colors">Home</a>
               <a href="#" className="text-brand-dark-gray hover:text-brand-orange transition-colors">Destinations</a>
               <a href="#" className="text-brand-dark-gray hover:text-brand-orange transition-colors">Find Buddies</a>
               <a href="#" className="text-brand-dark-gray hover:text-brand-orange transition-colors">My Trips</a>
