@@ -23,7 +23,10 @@ interface MessageProps {
     content: string;
     sender: string;
   };
+  onAddReaction?: (emoji: string) => void;
 }
+
+const emojiOptions = ['👍', '❤️', '😂', '😮', '😢', '👏', '🙏'];
 
 export function Message({
   id,
@@ -33,9 +36,11 @@ export function Message({
   isOwn,
   status,
   reactions = [],
-  replyTo
+  replyTo,
+  onAddReaction
 }: MessageProps) {
   const [showActions, setShowActions] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout>();
 
   const handleMouseDown = () => {
@@ -60,6 +65,13 @@ export function Message({
       case 'read':
         return <div className="flex"><Check className="w-4 h-4 text-blue-500" /><Check className="w-4 h-4 -ml-2 text-blue-500" /></div>;
     }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    if (onAddReaction) {
+      onAddReaction(emoji);
+    }
+    setShowEmojiPicker(false);
   };
 
   return (
@@ -122,7 +134,8 @@ export function Message({
             {reactions.map((reaction, index) => (
               <div
                 key={index}
-                className="bg-white border rounded-full px-2 py-0.5 text-sm flex items-center gap-1"
+                className="bg-white border rounded-full px-2 py-0.5 text-sm flex items-center gap-1 cursor-pointer hover:bg-gray-50"
+                onClick={() => onAddReaction && onAddReaction(reaction.emoji)}
               >
                 <span>{reaction.emoji}</span>
                 <span className="text-xs text-gray-500">{reaction.count}</span>
@@ -137,7 +150,11 @@ export function Message({
             'absolute bottom-full mb-2 bg-white rounded-lg shadow-lg border p-1 flex gap-1',
             isOwn ? 'right-0' : 'left-0'
           )}>
-            <button className="p-2 hover:bg-gray-100 rounded-lg" aria-label="React">
+            <button 
+              className="p-2 hover:bg-gray-100 rounded-lg" 
+              aria-label="React"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            >
               <Heart className="w-4 h-4" />
             </button>
             <button className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Reply">
@@ -149,6 +166,26 @@ export function Message({
             <button className="p-2 hover:bg-gray-100 rounded-lg text-red-500" aria-label="Delete">
               <Trash2 className="w-4 h-4" />
             </button>
+          </div>
+        )}
+
+        {/* Emoji Picker */}
+        {showEmojiPicker && (
+          <div className={cn(
+            'absolute bottom-full mb-12 bg-white rounded-lg shadow-lg border p-2',
+            isOwn ? 'right-0' : 'left-0'
+          )}>
+            <div className="flex gap-1">
+              {emojiOptions.map(emoji => (
+                <button
+                  key={emoji}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full text-lg"
+                  onClick={() => handleEmojiSelect(emoji)}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
