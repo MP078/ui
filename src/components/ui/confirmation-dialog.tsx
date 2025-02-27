@@ -32,7 +32,7 @@ export function ConfirmationDialog({
       case 'warning':
         return 'text-yellow-600';
       case 'info':
-        return 'text-blue-600';
+        return 'text-brand-orange';
       default:
         return 'text-gray-600';
     }
@@ -45,7 +45,7 @@ export function ConfirmationDialog({
       case 'warning':
         return 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500';
       case 'info':
-        return 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500';
+        return 'bg-brand-orange hover:bg-brand-orange/90 focus:ring-brand-orange';
       default:
         return 'bg-brand-orange hover:bg-brand-orange/90 focus:ring-brand-orange';
     }
