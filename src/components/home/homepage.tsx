@@ -18,7 +18,7 @@ export function Homepage() {
               <Link to="/feed" className="text-brand-dark-gray hover:text-brand-orange transition-colors">Home</Link>
               <a href="#destinations" className="text-brand-dark-gray hover:text-brand-orange transition-colors">Destinations</a>
               <a href="#find-buddies" className="text-brand-dark-gray hover:text-brand-orange transition-colors">Find Buddies</a>
-              <a href="#" className="text-brand-dark-gray hover:text-brand-orange transition-colors">My Trips</a>
+              {/*<a href="#" className="text-brand-dark-gray hover:text-brand-orange transition-colors">My Trips</a>*/}
             </nav>
           </div>
           <div className="flex space-x-4">
