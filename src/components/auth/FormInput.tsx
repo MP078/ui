@@ -3,6 +3,7 @@ import { FormInputProps } from './types';
 
 export function FormInput({
   id,
+  name,
   label,
   type,
   value,
@@ -25,6 +26,7 @@ export function FormInput({
         )}
         <input
           id={id}
+          name={name}
           type={type}
           value={value}
           onChange={onChange}
