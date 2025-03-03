@@ -13,6 +13,7 @@ export interface RegisterFormState extends AuthFormState {
 
 export interface FormInputProps {
   id: string;
+  name: string;
   label: string;
   type: string;
   value: string;
