@@ -37,13 +37,14 @@ export function CommentModal({
   const { user } = useContext(UserContext);
 
   useEffect(() => {
+    if (!isOpen) return;
     console.log("Fetching comments for post:", postId);
     if (commentCount > 0) {
       api.get(`/posts/${postId}/comments`).then((response) => {
         setComments(response.data.data);
       });
     }
-  }, [commentCount, postId]);
+  }, [isOpen, commentCount, postId]);
 
   if (!isOpen) return null;
 
@@ -62,7 +63,17 @@ export function CommentModal({
         replies: [],
       };
 
-      setComments((prev) => [newEntry, ...prev]); // Optimistically update UI
+      api
+        .post(`/posts/${postId}/comments`, {
+          body: newComment.trim(),
+        })
+        .then((response) => {
+          console.log("Comment posted:", response.data);
+          setComments((prev) => [newEntry, ...prev]);
+        })
+        .catch((error) => {
+          console.error("Error posting comment:", error);
+        });
       onComment(newComment.trim());
       setNewComment("");
     }
