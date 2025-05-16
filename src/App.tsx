@@ -13,7 +13,7 @@ import Register from "./pages/Register";
 import CreateTrip from "./pages/CreateTrip";
 import StoryViewer from "./components/story/StoryViewer";
 import ConnectionRequests from "./pages/ConnectionRequests";
-import { auth } from "./lib/axios";
+import { auth } from "./lib/api";
 
 function App() {
   const location = useLocation();
