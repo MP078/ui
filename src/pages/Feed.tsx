@@ -18,57 +18,61 @@ export default function Feed() {
     null
   );
 
-  useEffect(() => {
-    api
-      .get("/posts")
-      .then((res) => {
-        const data = res.data;
-        type PostType = {
-          id: string;
-          user: {
-            name: string;
-            profile_image: string;
-            verified: boolean;
-          };
-          destination: string;
-          content: string;
-          images: { image: string }[];
-          created_at: string;
-          likes: number;
-          comments_count: number;
-          liked: boolean | false;
-        };
-        const transformed = data.data.map((post: unknown) => {
-          const typedPost = post as PostType;
-          return {
-            id: typedPost.id, // <- add this line
-            user: {
-              name: typedPost.user.name,
-              image: typedPost.user.profile_image,
-              location: typedPost.destination,
-              verified: typedPost.user.verified,
-            },
-            content: {
-              text: typedPost.content,
-              images: typedPost.images.map((img) => img.image),
-              timestamp: new Date(typedPost.created_at).toLocaleString(),
-            },
-            engagement: {
-              likes: typedPost.likes,
-              comments: typedPost.comments_count,
-              shares: 0,
-            },
-            liked: typedPost.liked,
-          };
-        });
+  const fetchPosts = async () => {
+    try {
+      const res = await api.get("/posts");
+      const data = res.data;
 
-        setFeedPosts(transformed);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch feed:", err);
-        setLoading(false);
+      type PostType = {
+        id: string;
+        user: {
+          name: string;
+          profile_image: string;
+          verified: boolean;
+        };
+        destination: string;
+        content: string;
+        images: { image: string }[];
+        created_at: string;
+        likes: number;
+        comments_count: number;
+        liked: boolean | false;
+      };
+
+      const transformed = data.data.map((post: unknown) => {
+        const typedPost = post as PostType;
+        return {
+          id: typedPost.id,
+          user: {
+            name: typedPost.user.name,
+            image: typedPost.user.profile_image,
+            location: typedPost.destination,
+            verified: typedPost.user.verified,
+          },
+          content: {
+            text: typedPost.content,
+            images: typedPost.images.map((img) => img.image),
+            timestamp: new Date(typedPost.created_at).toLocaleString(),
+          },
+          engagement: {
+            likes: typedPost.likes,
+            comments: typedPost.comments_count,
+            shares: 0,
+          },
+          liked: typedPost.liked,
+        };
       });
+
+      setFeedPosts(transformed);
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch feed:", err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
   }, []);
 
   const handleConnect = (user: { name: string }) => {
@@ -79,17 +83,14 @@ export default function Feed() {
   return (
     <div className="max-w-[1200px] mx-auto grid grid-cols-12 gap-6 px-4">
       <div className="col-span-8">
-        {/* Stories */}
         <div className="bg-white rounded-lg p-4 mb-4">
           <StoryRow />
         </div>
 
-        {/* Post Input */}
         <div className="mb-4">
-          <PostInput />
+          <PostInput onPostSuccess={fetchPosts} />
         </div>
 
-        {/* Feed Posts */}
         <div className="space-y-4">
           {loading ? (
             <div className="text-center text-gray-500">Loading...</div>
@@ -99,14 +100,12 @@ export default function Feed() {
         </div>
       </div>
 
-      {/* Right Sidebar */}
       <div className="col-span-4">
         <SearchBar
           placeholder="Search destinations or..."
           onSearch={(query) => console.log("Searching:", query)}
           className="mb-4"
         />
-
         <UpcomingTrips_feed />
         <SuggestedBuddies />
         <TrendingDestinations />

@@ -2,6 +2,11 @@ import React, { useState, useRef, useContext } from "react";
 import { Image, MapPin, Calendar, X, Tag } from "lucide-react";
 import { cn } from "../lib/utils";
 import { UserContext } from "../context/UserContext";
+import { api } from "../lib/api";
+
+interface PostInputProps {
+  onPostSuccess?: () => void;
+}
 
 interface PostInputState {
   text: string;
@@ -15,7 +20,7 @@ interface PostInputState {
   tags?: string[];
 }
 
-export default function PostInput() {
+export default function PostInput({ onPostSuccess }: PostInputProps) {
   const [post, setPost] = useState<PostInputState>({
     text: "",
     photos: [],
@@ -27,7 +32,6 @@ export default function PostInput() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const { user } = useContext(UserContext);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,8 +40,6 @@ export default function PostInput() {
       ...prev,
       photos: [...prev.photos, ...files],
     }));
-
-    // Create preview URLs
     const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
     setPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
   };
@@ -68,22 +70,40 @@ export default function PostInput() {
     }));
   };
 
-  const handleSubmit = () => {
-    // Handle post submission
-    console.log("Submitting post:", post);
+  const handleSubmit = async () => {
+    if (!post.text.trim() && post.photos.length === 0) return;
 
-    // Reset form
-    setPost({ text: "", photos: [], tags: [] });
-    setPreviewUrls([]);
-    setShowLocationInput(false);
-    setShowTravelPlan(false);
-    setShowTagInput(false);
-  };
+    const formData = new FormData();
+    formData.append("content", post.text);
+    post.photos.forEach((file) => formData.append("images[]", file));
+    if (post.location) formData.append("location", post.location);
+    if (post.travelPlan) {
+      formData.append("start_date", post.travelPlan.startDate);
+      formData.append("end_date", post.travelPlan.endDate);
+      formData.append("destination", post.travelPlan.destination);
+    }
+    if (post.tags?.length) {
+      post.tags.forEach((tag) => formData.append("tags[]", tag));
+    }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && showTagInput) {
-      e.preventDefault();
-      addTag();
+    try {
+      await api.post("/posts", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      // Reset state
+      setPost({ text: "", photos: [], tags: [] });
+      setPreviewUrls([]);
+      setShowLocationInput(false);
+      setShowTravelPlan(false);
+      setShowTagInput(false);
+
+      // Trigger feed refresh
+      onPostSuccess?.();
+    } catch (error) {
+      console.error("Post submission failed:", error);
     }
   };
 
