@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { StoryRow } from "../components/story/StoryRow";
 import PostInput from "../components/PostInput";
-import { FeedPost } from "../components/feed/FeedPost";
+import { FeedPost, FeedPostProps } from "../components/feed/FeedPost";
 import { ConfirmationDialog } from "../components/ui/confirmation-dialog";
 import SuggestedBuddies from "../components/SuggestedBuddies";
 import TrendingDestinations from "../components/TrendingDestinations";
@@ -11,7 +11,7 @@ import { FloatingActionButton } from "../components/ui/floating-action-button";
 import { api } from "../lib/api";
 
 export default function Feed() {
-  const [feedPosts, setFeedPosts] = useState([]);
+  const [feedPosts, setFeedPosts] = useState<FeedPostProps[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConnectConfirmation, setShowConnectConfirmation] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ name: string } | null>(
@@ -23,24 +23,42 @@ export default function Feed() {
       .get("/posts")
       .then((res) => {
         const data = res.data;
-        const transformed = data.data.map((post: unknown) => ({
+        type PostType = {
+          id: string;
           user: {
-            name: post.user.name,
-            image: post.user.profile_image,
-            location: post.destination,
-            verified: post.user.verified,
-          },
-          content: {
-            text: post.content,
-            images: post.images.map((img: any) => img.image),
-            timestamp: new Date(post.created_at).toLocaleString(),
-          },
-          engagement: {
-            likes: post.likes,
-            comments: post.comments_count,
-            shares: 0, // assuming you don’t have shares yet
-          },
-        }));
+            name: string;
+            profile_image: string;
+            verified: boolean;
+          };
+          destination: string;
+          content: string;
+          images: { image: string }[];
+          created_at: string;
+          likes: number;
+          comments_count: number;
+        };
+        const transformed = data.data.map((post: unknown) => {
+          const typedPost = post as PostType;
+          return {
+            id: typedPost.id, // <- add this line
+            user: {
+              name: typedPost.user.name,
+              image: typedPost.user.profile_image,
+              location: typedPost.destination,
+              verified: typedPost.user.verified,
+            },
+            content: {
+              text: typedPost.content,
+              images: typedPost.images.map((img) => img.image),
+              timestamp: new Date(typedPost.created_at).toLocaleString(),
+            },
+            engagement: {
+              likes: typedPost.likes,
+              comments: typedPost.comments_count,
+              shares: 0,
+            },
+          };
+        });
 
         setFeedPosts(transformed);
         setLoading(false);
@@ -74,7 +92,7 @@ export default function Feed() {
           {loading ? (
             <div className="text-center text-gray-500">Loading...</div>
           ) : (
-            feedPosts.map((post, index) => <FeedPost key={index} {...post} />)
+            feedPosts.map((post) => <FeedPost key={post.id} {...post} />)
           )}
         </div>
       </div>

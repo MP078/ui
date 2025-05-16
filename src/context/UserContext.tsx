@@ -6,7 +6,7 @@ export interface User {
   name?: string;
   username?: string;
   email?: string;
-  image_url?: string;
+  image_url: string;
 }
 
 interface UserContextType {
