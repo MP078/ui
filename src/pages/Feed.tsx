@@ -1,58 +1,55 @@
-import React, { useState } from 'react';
-import { StoryRow } from '../components/story/StoryRow';
-import PostInput from '../components/PostInput';
-import { FeedPost } from '../components/feed/FeedPost';
-import { ConfirmationDialog } from '../components/ui/confirmation-dialog';
-import SuggestedBuddies from '../components/SuggestedBuddies';
-import TrendingDestinations from '../components/TrendingDestinations';
-import UpcomingTrips_feed from '../components/UpcomingTrips_feed';
-import { SearchBar } from '../components/search/SearchBar';
-import { FloatingActionButton } from '../components/ui/floating-action-button';
-
-const feedPosts = [
-  {
-    user: {
-      name: 'Alex Andrew',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
-      location: 'Pokhara, Nepal',
-      verified: true,
-    },
-    content: {
-      text: 'Just experienced the most breathtaking sunrise over Phewa lake! The reflection of the Annapurna range on the crystal clear water was absolutely magical.',
-      images: ['https://images.unsplash.com/photo-1544735716-392fe2489ffa'],
-      timestamp: '2 hours ago',
-    },
-    engagement: {
-      likes: 250,
-      comments: 30,
-      shares: 10,
-    },
-  },
-  {
-    user: {
-      name: 'Richard Philip',
-      image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
-      location: 'Kathmandu, Nepal',
-      verified: true,
-    },
-    content: {
-      text: 'Exploring the ancient temples of Kathmandu Durbar Square. The architecture and history here is simply incredible!',
-      images: ['https://images.unsplash.com/photo-1582654454409-778f6619ddc6'],
-      timestamp: '2 hours ago',
-    },
-    engagement: {
-      likes: 500,
-      comments: 100,
-      shares: 100,
-    },
-  },
-];
+import { useState, useEffect } from "react";
+import { StoryRow } from "../components/story/StoryRow";
+import PostInput from "../components/PostInput";
+import { FeedPost } from "../components/feed/FeedPost";
+import { ConfirmationDialog } from "../components/ui/confirmation-dialog";
+import SuggestedBuddies from "../components/SuggestedBuddies";
+import TrendingDestinations from "../components/TrendingDestinations";
+import UpcomingTrips_feed from "../components/UpcomingTrips_feed";
+import { SearchBar } from "../components/search/SearchBar";
+import { FloatingActionButton } from "../components/ui/floating-action-button";
+import { api } from "../lib/api";
 
 export default function Feed() {
+  const [feedPosts, setFeedPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showConnectConfirmation, setShowConnectConfirmation] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ name: string } | null>(
     null
   );
+
+  useEffect(() => {
+    api
+      .get("/posts")
+      .then((res) => {
+        const data = res.data;
+        const transformed = data.data.map((post: unknown) => ({
+          user: {
+            name: post.user.name,
+            image: post.user.profile_image,
+            location: post.destination,
+            verified: post.user.verified,
+          },
+          content: {
+            text: post.content,
+            images: post.images.map((img: any) => img.image),
+            timestamp: new Date(post.created_at).toLocaleString(),
+          },
+          engagement: {
+            likes: post.likes,
+            comments: post.comments_count,
+            shares: 0, // assuming you don’t have shares yet
+          },
+        }));
+
+        setFeedPosts(transformed);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch feed:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const handleConnect = (user: { name: string }) => {
     setSelectedUser(user);
@@ -74,37 +71,32 @@ export default function Feed() {
 
         {/* Feed Posts */}
         <div className="space-y-4">
-          {feedPosts.map((post, index) => (
-            <FeedPost key={index} {...post} />
-          ))}
+          {loading ? (
+            <div className="text-center text-gray-500">Loading...</div>
+          ) : (
+            feedPosts.map((post, index) => <FeedPost key={index} {...post} />)
+          )}
         </div>
       </div>
 
       {/* Right Sidebar */}
       <div className="col-span-4">
-        {/* Search */}
         <SearchBar
           placeholder="Search destinations or..."
-          onSearch={(query) => console.log('Searching:', query)}
+          onSearch={(query) => console.log("Searching:", query)}
           className="mb-4"
         />
 
-        {/* Upcoming Trips */}
         <UpcomingTrips_feed />
-
-        {/* Suggested Travel Buddies */}
         <SuggestedBuddies />
-
-        {/* Trending Destinations */}
         <TrendingDestinations />
       </div>
 
-      {/* Connect Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={showConnectConfirmation}
         onClose={() => setShowConnectConfirmation(false)}
         onConfirm={() => {
-          console.log('Connecting with:', selectedUser?.name);
+          console.log("Connecting with:", selectedUser?.name);
           setShowConnectConfirmation(false);
         }}
         title="Connect with Traveler"
