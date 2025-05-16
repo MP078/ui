@@ -55,7 +55,7 @@ const auth = {
     },
 
     logout: async () => {
-        const response = await api.post('/auth/sign_out');
+        const response = await api.delete('/auth/sign_out');
         localStorage.removeItem('isLoggedIn');
         return response.data;
     },

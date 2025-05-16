@@ -13,16 +13,16 @@ import CreateTrip from "./pages/CreateTrip";
 import StoryViewer from "./components/story/StoryViewer";
 import ConnectionRequests from "./pages/ConnectionRequests";
 import { useAuth } from "./context/authContext";
+import { useEffect } from "react";
 
 function App() {
   const location = useLocation();
   const state = location.state as { backgroundLocation?: Location };
   const isHomePage = location.pathname === "/";
   const isAuthPage = ["/login", "/register"].includes(location.pathname);
-
   const { authenticated, loading } = useAuth();
+  useEffect(() => {}, [authenticated]);
 
-  // Optional: handle loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
