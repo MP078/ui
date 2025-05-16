@@ -24,6 +24,13 @@ api.interceptors.response.use(
     (response) => {
         return response;
     },
+    (error) => {
+        console.error('API error:', error);
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('isLoggedIn');
+        }
+        return Promise.reject(error);
+    }
 
 );
 
