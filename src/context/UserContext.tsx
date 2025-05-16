@@ -47,7 +47,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           email: backendUser.email,
           image_url:
             backendUser.image_url ||
-            `${getAvatarNumber(backendUser.id.toString())}.png`,
+            `/avatars/${getAvatarNumber(backendUser.id.toString())}.png`,
         };
 
         setUser(formattedUser);
