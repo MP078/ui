@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+    baseURL: import.meta.env.VITE_API_URL,
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json'
@@ -35,7 +35,11 @@ const isAuthenticated = () => {
 // Auth endpoints
 const auth = {
     login: async (email: string, password: string) => {
-        const response = await api.post('/auth/login', { email, password });
+        const response = await api.post('/auth/sign_in', {
+            email,
+            password,
+        });
+
         localStorage.setItem('isLoggedIn', 'true');
         return response.data;
     },
@@ -45,13 +49,13 @@ const auth = {
         password: string;
         name: string;
     }) => {
-        const response = await api.post('/auth/register', userData);
+        const response = await api.post('/auth', userData);
         localStorage.setItem('isLoggedIn', 'true');
         return response.data;
     },
 
     logout: async () => {
-        const response = await api.post('/auth/logout');
+        const response = await api.post('/auth/sign_out');
         localStorage.removeItem('isLoggedIn');
         return response.data;
     },
