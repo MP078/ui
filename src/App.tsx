@@ -12,13 +12,16 @@ import CreateTrip from "./pages/CreateTrip";
 import StoryViewer from "./components/story/StoryViewer";
 import ConnectionRequests from "./pages/ConnectionRequests";
 import { useAuth } from "./context/authContext";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import Feed from "./pages/Feed";
+import { UserContext } from "./context/UserContext";
 
 function App() {
   const location = useLocation();
   const state = location.state as { backgroundLocation?: Location };
   const { authenticated, loading } = useAuth();
+  const { user } = useContext(UserContext);
+
   useEffect(() => {}, [authenticated]);
 
   if (loading) {
@@ -31,7 +34,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {authenticated && <Header />}
+      {authenticated && <Header image_url={user?.image_url} />}
       <main>
         <Routes location={state?.backgroundLocation || location}>
           {/* Public routes */}

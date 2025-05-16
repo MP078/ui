@@ -5,8 +5,9 @@ import { NotificationDropdown } from "./notifications/NotificationDropdown";
 import { FriendRequestDropdown } from "./notifications/FriendRequestDropdown";
 import { ConfirmationDialog } from "./ui/confirmation-dialog";
 import { auth } from "../lib/api";
+import { User } from "../context/UserContext";
 
-export default function Header() {
+export default function Header({ image_url }: User) {
   const location = useLocation();
   const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -190,7 +191,7 @@ export default function Header() {
                 className="relative"
               >
                 <img
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330"
+                  src={image_url}
                   alt="Profile"
                   className="w-8 h-8 rounded-full cursor-pointer"
                 />

@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, X } from 'lucide-react';
-import { Button } from '../ui/button';
-import { CommentModal } from '../comments/CommentModal';
+import { useEffect, useState } from "react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, X } from "lucide-react";
+import { Button } from "../ui/button";
+import { CommentModal } from "../comments/CommentModal";
+import { api } from "../../lib/api";
 
-interface FeedPostProps {
+export interface FeedPostProps {
+  id: string;
   user: {
     name: string;
     image: string;
@@ -20,51 +22,82 @@ interface FeedPostProps {
     comments: number;
     shares: number;
   };
+  liked?: boolean | false;
 }
 
-const sampleComments = [
-  {
-    id: '1',
-    user: {
-      name: 'Sarah Chen',
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330'
-    },
-    text: 'This looks absolutely amazing! 😍',
-    timestamp: '2 hours ago',
-    likes: 5
-  },
-  {
-    id: '2',
-    user: {
-      name: 'Mike Johnson',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e'
-    },
-    text: 'Great shot! Which camera did you use?',
-    timestamp: '1 hour ago',
-    likes: 3
-  }
-];
-
-export function FeedPost({ user, content, engagement: initialEngagement }: FeedPostProps) {
-  const [isLiked, setIsLiked] = useState(false);
+export function FeedPost({
+  liked,
+  user,
+  content,
+  engagement: initialEngagement,
+  id,
+}: FeedPostProps) {
+  const [isLiked, setIsLiked] = useState(liked || false);
   const [engagement, setEngagement] = useState(initialEngagement);
   const [showComments, setShowComments] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setEngagement(prev => ({
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showComments) setShowComments(false);
+        if (showShareModal) setShowShareModal(false);
+      }
+    };
+    if (showComments || showShareModal) {
+      window.addEventListener("keydown", handleEsc);
+    }
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [showComments, showShareModal]);
+
+  const handleLike = async () => {
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
+    setEngagement((prev) => ({
       ...prev,
-      likes: prev.likes + (isLiked ? -1 : 1)
+      likes: prev.likes + (newLikedState ? 1 : -1),
     }));
+
+    try {
+      await api.post(`/posts/${id}/like`, {
+        like: newLikedState,
+      });
+    } catch (error) {
+      console.error("Failed to update like status:", error);
+      setIsLiked(!newLikedState);
+      setEngagement((prev) => ({
+        ...prev,
+        likes: prev.likes + (newLikedState ? -1 : 1),
+      }));
+    }
+  };
+
+  const handleUnlike = async () => {
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
+    setEngagement((prev) => ({
+      ...prev,
+      likes: prev.likes + (newLikedState ? 1 : -1),
+    }));
+
+    try {
+      await api.delete(`/posts/${id}/unlike`);
+    } catch (error) {
+      console.error("Failed to update like status:", error);
+      setIsLiked(!newLikedState);
+      setEngagement((prev) => ({
+        ...prev,
+        likes: prev.likes + (newLikedState ? -1 : 1),
+      }));
+    }
   };
 
   const handleComment = (text: string) => {
-    setEngagement(prev => ({
+    setEngagement((prev) => ({
       ...prev,
-      comments: prev.comments + 1
+      comments: prev.comments + 1,
     }));
-    console.log('New comment:', text);
+    console.log("New comment:", text);
   };
 
   const handleShare = () => {
@@ -83,9 +116,7 @@ export function FeedPost({ user, content, engagement: initialEngagement }: FeedP
           <div>
             <div className="flex items-center gap-1">
               <span className="font-medium">{user.name}</span>
-              {user.verified && (
-                <span className="text-brand-orange">✓</span>
-              )}
+              {user.verified && <span className="text-brand-orange">✓</span>}
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span>{user.location}</span>
@@ -98,9 +129,9 @@ export function FeedPost({ user, content, engagement: initialEngagement }: FeedP
           <MoreHorizontal className="w-5 h-5 text-gray-500" />
         </Button>
       </div>
-      
+
       <p className="text-gray-800 mb-4">{content.text}</p>
-      
+
       {content.images && content.images.length > 0 && (
         <div className="mb-4 rounded-lg overflow-hidden">
           <img
@@ -110,15 +141,15 @@ export function FeedPost({ user, content, engagement: initialEngagement }: FeedP
           />
         </div>
       )}
-      
+
       <div className="flex items-center justify-between pt-4 border-t">
         <Button
           variant="ghost"
           size="sm"
-          className={`flex items-center gap-2 ${isLiked ? 'text-red-500' : ''}`}
-          onClick={handleLike}
+          className={`flex items-center gap-2 ${isLiked ? "text-red-500" : ""}`}
+          onClick={isLiked ? handleUnlike : handleLike}
         >
-          <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+          <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
           <span>{engagement.likes}</span>
         </Button>
         <Button
@@ -141,15 +172,14 @@ export function FeedPost({ user, content, engagement: initialEngagement }: FeedP
         </Button>
       </div>
 
-      {/* Comment Modal */}
       <CommentModal
+        commentCount={engagement.comments}
         isOpen={showComments}
         onClose={() => setShowComments(false)}
         onComment={handleComment}
-        comments={sampleComments}
+        postId={id}
       />
 
-      {/* Share Modal */}
       {showShareModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">

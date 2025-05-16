@@ -1,6 +1,12 @@
-import React, { useState, useRef } from 'react';
-import { Image, MapPin, Calendar, X, Smile, Users, Tag } from 'lucide-react';
-import { cn } from '../lib/utils';
+import React, { useState, useRef, useContext } from "react";
+import { Image, MapPin, Calendar, X, Tag } from "lucide-react";
+import { cn } from "../lib/utils";
+import { UserContext } from "../context/UserContext";
+import { api } from "../lib/api";
+
+interface PostInputProps {
+  onPostSuccess?: () => void;
+}
 
 interface PostInputState {
   text: string;
@@ -14,81 +20,98 @@ interface PostInputState {
   tags?: string[];
 }
 
-export default function PostInput() {
+export default function PostInput({ onPostSuccess }: PostInputProps) {
   const [post, setPost] = useState<PostInputState>({
-    text: '',
+    text: "",
     photos: [],
-    tags: []
+    tags: [],
   });
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [showTravelPlan, setShowTravelPlan] = useState(false);
   const [showTagInput, setShowTagInput] = useState(false);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
+  const [tagInput, setTagInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useContext(UserContext);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setPost(prev => ({
+    setPost((prev) => ({
       ...prev,
-      photos: [...prev.photos, ...files]
+      photos: [...prev.photos, ...files],
     }));
-
-    // Create preview URLs
-    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
-    setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+    const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
+    setPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
   };
 
   const removePhoto = (index: number) => {
-    setPost(prev => ({
+    setPost((prev) => ({
       ...prev,
-      photos: prev.photos.filter((_, i) => i !== index)
+      photos: prev.photos.filter((_, i) => i !== index),
     }));
     URL.revokeObjectURL(previewUrls[index]);
-    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
   const addTag = () => {
     if (tagInput.trim() && !post.tags?.includes(tagInput.trim())) {
-      setPost(prev => ({
+      setPost((prev) => ({
         ...prev,
-        tags: [...(prev.tags || []), tagInput.trim()]
+        tags: [...(prev.tags || []), tagInput.trim()],
       }));
-      setTagInput('');
+      setTagInput("");
     }
   };
 
   const removeTag = (tag: string) => {
-    setPost(prev => ({
+    setPost((prev) => ({
       ...prev,
-      tags: prev.tags?.filter(t => t !== tag)
+      tags: prev.tags?.filter((t) => t !== tag),
     }));
   };
 
-  const handleSubmit = () => {
-    // Handle post submission
-    console.log('Submitting post:', post);
-    
-    // Reset form
-    setPost({ text: '', photos: [], tags: [] });
-    setPreviewUrls([]);
-    setShowLocationInput(false);
-    setShowTravelPlan(false);
-    setShowTagInput(false);
-  };
+  const handleSubmit = async () => {
+    if (!post.text.trim() && post.photos.length === 0) return;
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && showTagInput) {
-      e.preventDefault();
-      addTag();
+    const formData = new FormData();
+    formData.append("content", post.text);
+    post.photos.forEach((file) => formData.append("images[]", file));
+    if (post.location) formData.append("location", post.location);
+    if (post.travelPlan) {
+      formData.append("start_date", post.travelPlan.startDate);
+      formData.append("end_date", post.travelPlan.endDate);
+      formData.append("destination", post.travelPlan.destination);
+    }
+    if (post.tags?.length) {
+      post.tags.forEach((tag) => formData.append("tags[]", tag));
+    }
+
+    try {
+      await api.post("/posts", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      // Reset state
+      setPost({ text: "", photos: [], tags: [] });
+      setPreviewUrls([]);
+      setShowLocationInput(false);
+      setShowTravelPlan(false);
+      setShowTagInput(false);
+
+      // Trigger feed refresh
+      onPostSuccess?.();
+    } catch (error) {
+      console.error("Post submission failed:", error);
     }
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-4">
       <div className="flex items-center gap-3 mb-3">
-        <img 
-          src="https://images.unsplash.com/photo-1494790108377-be9c29b29330"
+        <img
+          src={user?.image_url}
           alt="Profile"
           className="w-10 h-10 rounded-full"
         />
@@ -97,7 +120,9 @@ export default function PostInput() {
           placeholder="Share your travel experiences..."
           className="flex-1 bg-gray-50 rounded-full px-4 py-2.5 text-gray-700 focus:outline-none focus:ring-1 focus:ring-brand-orange/30"
           value={post.text}
-          onChange={(e) => setPost(prev => ({ ...prev, text: e.target.value }))}
+          onChange={(e) =>
+            setPost((prev) => ({ ...prev, text: e.target.value }))
+          }
         />
       </div>
 
@@ -107,7 +132,7 @@ export default function PostInput() {
           {previewUrls.map((url, index) => (
             <div key={index} className="relative">
               <img
-                src={url}
+                src={user?.image_url}
                 alt={`Preview ${index + 1}`}
                 className="w-20 h-20 object-cover rounded-lg"
               />
@@ -130,8 +155,10 @@ export default function PostInput() {
             type="text"
             placeholder="Add location"
             className="flex-1 bg-transparent border-none outline-none text-sm"
-            value={post.location || ''}
-            onChange={(e) => setPost(prev => ({ ...prev, location: e.target.value }))}
+            value={post.location || ""}
+            onChange={(e) =>
+              setPost((prev) => ({ ...prev, location: e.target.value }))
+            }
           />
           <button
             onClick={() => setShowLocationInput(false)}
@@ -161,35 +188,54 @@ export default function PostInput() {
             type="text"
             placeholder="Destination"
             className="w-full rounded-lg px-3 py-2 text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-brand-orange/30"
-            value={post.travelPlan?.destination || ''}
-            onChange={(e) => setPost(prev => ({
-              ...prev,
-              travelPlan: { ...prev.travelPlan, destination: e.target.value } as any
-            }))}
+            value={post.travelPlan?.destination || ""}
+            onChange={(e) =>
+              setPost((prev) => ({
+                ...prev,
+                travelPlan: {
+                  ...prev.travelPlan,
+                  destination: e.target.value,
+                } as any,
+              }))
+            }
           />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Start Date</label>
+              <label className="text-xs text-gray-500 mb-1 block">
+                Start Date
+              </label>
               <input
                 type="date"
                 className="rounded-lg px-3 py-2 text-sm border border-gray-200 w-full focus:outline-none focus:ring-1 focus:ring-brand-orange/30"
-                value={post.travelPlan?.startDate || ''}
-                onChange={(e) => setPost(prev => ({
-                  ...prev,
-                  travelPlan: { ...prev.travelPlan, startDate: e.target.value } as any
-                }))}
+                value={post.travelPlan?.startDate || ""}
+                onChange={(e) =>
+                  setPost((prev) => ({
+                    ...prev,
+                    travelPlan: {
+                      ...prev.travelPlan,
+                      startDate: e.target.value,
+                    } as any,
+                  }))
+                }
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">End Date</label>
+              <label className="text-xs text-gray-500 mb-1 block">
+                End Date
+              </label>
               <input
                 type="date"
                 className="rounded-lg px-3 py-2 text-sm border border-gray-200 w-full focus:outline-none focus:ring-1 focus:ring-brand-orange/30"
-                value={post.travelPlan?.endDate || ''}
-                onChange={(e) => setPost(prev => ({
-                  ...prev,
-                  travelPlan: { ...prev.travelPlan, endDate: e.target.value } as any
-                }))}
+                value={post.travelPlan?.endDate || ""}
+                onChange={(e) =>
+                  setPost((prev) => ({
+                    ...prev,
+                    travelPlan: {
+                      ...prev.travelPlan,
+                      endDate: e.target.value,
+                    } as any,
+                  }))
+                }
               />
             </div>
           </div>
@@ -222,13 +268,19 @@ export default function PostInput() {
               <X className="w-4 h-4" />
             </button>
           </div>
-          
+
           {post.tags && post.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
               {post.tags.map((tag, index) => (
-                <div key={index} className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-700 flex items-center gap-1">
+                <div
+                  key={index}
+                  className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-700 flex items-center gap-1"
+                >
                   <span>#{tag}</span>
-                  <button onClick={() => removeTag(tag)} className="text-gray-500 hover:text-gray-700">
+                  <button
+                    onClick={() => removeTag(tag)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
                     <X className="w-3 h-3" />
                   </button>
                 </div>
@@ -289,7 +341,9 @@ export default function PostInput() {
         <button
           className={cn(
             "bg-brand-orange text-white px-4 py-1.5 rounded-full text-sm transition-colors",
-            (!post.text.trim() && post.photos.length === 0) ? "opacity-50 cursor-not-allowed" : "hover:bg-brand-orange/90"
+            !post.text.trim() && post.photos.length === 0
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:bg-brand-orange/90"
           )}
           onClick={handleSubmit}
           disabled={!post.text.trim() && post.photos.length === 0}
