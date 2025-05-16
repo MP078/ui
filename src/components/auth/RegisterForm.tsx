@@ -1,38 +1,39 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User } from 'lucide-react';
-import { Button } from '../ui/button';
-import { FormInput } from './FormInput';
-import { RegisterFormState } from './types';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Mail, Lock, User } from "lucide-react";
+import { Button } from "../ui/button";
+import { FormInput } from "./FormInput";
+import { RegisterFormState } from "./types";
+import { auth } from "../../lib/api";
 
 export function RegisterForm() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<RegisterFormState>({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
     acceptTerms: false,
-    isLoading: false
+    isLoading: false,
   });
   const [errors, setErrors] = useState<Partial<RegisterFormState>>({});
 
   const validateForm = () => {
     const newErrors: Partial<RegisterFormState> = {};
     if (!formData.name) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     }
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     }
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     }
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
     if (!formData.acceptTerms) {
-      newErrors.error = 'You must accept the terms and conditions';
+      newErrors.error = "You must accept the terms and conditions";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -42,22 +43,28 @@ export function RegisterForm() {
     e.preventDefault();
     if (!validateForm()) return;
 
-    setFormData(prev => ({ ...prev, isLoading: true }));
-    // Simulate API call
-    setTimeout(() => {
-      setFormData(prev => ({ ...prev, isLoading: false }));
-      navigate('/feed');
-    }, 1000);
+    setFormData((prev) => ({ ...prev, isLoading: true }));
+    try {
+      const { email, password, name } = formData;
+      const data = await auth.register({ email, password, name });
+
+      console.log("Registration successful:", data);
+      navigate(0);
+    } catch (error) {
+      console.error("Registration failed:", error);
+    } finally {
+      setFormData((prev) => ({ ...prev, isLoading: false }));
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
     if (errors[name as keyof RegisterFormState]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
@@ -120,13 +127,22 @@ export function RegisterForm() {
           onChange={handleChange}
           className="h-4 w-4 text-brand-orange focus:ring-brand-orange border-gray-300 rounded"
         />
-        <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-700">
-          I agree to the{' '}
-          <Link to="/terms" className="text-brand-orange hover:text-brand-orange/90">
+        <label
+          htmlFor="acceptTerms"
+          className="ml-2 block text-sm text-gray-700"
+        >
+          I agree to the{" "}
+          <Link
+            to="/terms"
+            className="text-brand-orange hover:text-brand-orange/90"
+          >
             Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link to="/privacy" className="text-brand-orange hover:text-brand-orange/90">
+          </Link>{" "}
+          and{" "}
+          <Link
+            to="/privacy"
+            className="text-brand-orange hover:text-brand-orange/90"
+          >
             Privacy Policy
           </Link>
         </label>
@@ -136,12 +152,8 @@ export function RegisterForm() {
         <p className="text-sm text-red-600 text-center">{errors.error}</p>
       )}
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={formData.isLoading}
-      >
-        {formData.isLoading ? 'Creating account...' : 'Create Account'}
+      <Button type="submit" className="w-full" disabled={formData.isLoading}>
+        {formData.isLoading ? "Creating account..." : "Create Account"}
       </Button>
 
       <div className="relative">
@@ -158,21 +170,32 @@ export function RegisterForm() {
           type="button"
           className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
         >
-          <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-2" />
+          <img
+            src="https://www.svgrepo.com/show/475656/google-color.svg"
+            alt="Google"
+            className="w-5 h-5 mr-2"
+          />
           Google
         </button>
         <button
           type="button"
           className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
         >
-          <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook" className="w-5 h-5 mr-2" />
+          <img
+            src="https://www.svgrepo.com/show/475647/facebook-color.svg"
+            alt="Facebook"
+            className="w-5 h-5 mr-2"
+          />
           Facebook
         </button>
       </div>
 
       <p className="text-center text-sm text-gray-600">
-        Already have an account?{' '}
-        <Link to="/login" className="text-brand-orange hover:text-brand-orange/90 font-medium">
+        Already have an account?{" "}
+        <Link
+          to="/login"
+          className="text-brand-orange hover:text-brand-orange/90 font-medium"
+        >
           Sign in
         </Link>
       </p>
