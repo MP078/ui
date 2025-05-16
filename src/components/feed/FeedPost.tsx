@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart, MessageCircle, Share2, MoreHorizontal, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { CommentModal } from "../comments/CommentModal";
+import { api } from "../../lib/api";
 
 export interface FeedPostProps {
   id: string;
@@ -21,25 +22,74 @@ export interface FeedPostProps {
     comments: number;
     shares: number;
   };
+  liked?: boolean | false;
 }
 
 export function FeedPost({
+  liked,
   user,
   content,
   engagement: initialEngagement,
   id,
 }: FeedPostProps) {
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(liked || false);
   const [engagement, setEngagement] = useState(initialEngagement);
   const [showComments, setShowComments] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showComments) setShowComments(false);
+        if (showShareModal) setShowShareModal(false);
+      }
+    };
+    if (showComments || showShareModal) {
+      window.addEventListener("keydown", handleEsc);
+    }
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [showComments, showShareModal]);
+
+  const handleLike = async () => {
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
     setEngagement((prev) => ({
       ...prev,
-      likes: prev.likes + (isLiked ? -1 : 1),
+      likes: prev.likes + (newLikedState ? 1 : -1),
     }));
+
+    try {
+      await api.post(`/posts/${id}/like`, {
+        like: newLikedState,
+      });
+    } catch (error) {
+      console.error("Failed to update like status:", error);
+      setIsLiked(!newLikedState);
+      setEngagement((prev) => ({
+        ...prev,
+        likes: prev.likes + (newLikedState ? -1 : 1),
+      }));
+    }
+  };
+
+  const handleUnlike = async () => {
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
+    setEngagement((prev) => ({
+      ...prev,
+      likes: prev.likes + (newLikedState ? 1 : -1),
+    }));
+
+    try {
+      await api.delete(`/posts/${id}/unlike`);
+    } catch (error) {
+      console.error("Failed to update like status:", error);
+      setIsLiked(!newLikedState);
+      setEngagement((prev) => ({
+        ...prev,
+        likes: prev.likes + (newLikedState ? -1 : 1),
+      }));
+    }
   };
 
   const handleComment = (text: string) => {
@@ -97,7 +147,7 @@ export function FeedPost({
           variant="ghost"
           size="sm"
           className={`flex items-center gap-2 ${isLiked ? "text-red-500" : ""}`}
-          onClick={handleLike}
+          onClick={isLiked ? handleUnlike : handleLike}
         >
           <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
           <span>{engagement.likes}</span>

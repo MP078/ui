@@ -36,6 +36,7 @@ export default function Feed() {
           created_at: string;
           likes: number;
           comments_count: number;
+          liked: boolean | false;
         };
         const transformed = data.data.map((post: unknown) => {
           const typedPost = post as PostType;
@@ -57,6 +58,7 @@ export default function Feed() {
               comments: typedPost.comments_count,
               shares: 0,
             },
+            liked: typedPost.liked,
           };
         });
 

@@ -115,6 +115,12 @@ export function CommentModal({
               type="text"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  (e.target as HTMLInputElement).form?.requestSubmit();
+                }
+              }}
               placeholder="Write a comment..."
               className="flex-1 bg-gray-100 rounded-full px-4 py-2"
             />
