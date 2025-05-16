@@ -67,9 +67,9 @@ export default function Header() {
             </Link>
             <nav className="flex items-center gap-8 overflow-x-auto no-scrollbar">
               <Link
-                to="/feed"
+                to="/"
                 className={`flex items-center gap-1 whitespace-nowrap ${
-                  location.pathname === "/feed"
+                  location.pathname === "/"
                     ? "text-brand-orange"
                     : "text-gray-600"
                 }`}

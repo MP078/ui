@@ -1,7 +1,6 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import Header from "./components/Header";
 import { Homepage } from "./components/home/homepage";
-import Feed from "./pages/Feed";
 import Messages from "./components/chat/Messages";
 import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
@@ -14,12 +13,11 @@ import StoryViewer from "./components/story/StoryViewer";
 import ConnectionRequests from "./pages/ConnectionRequests";
 import { useAuth } from "./context/authContext";
 import { useEffect } from "react";
+import Feed from "./pages/Feed";
 
 function App() {
   const location = useLocation();
   const state = location.state as { backgroundLocation?: Location };
-  const isHomePage = location.pathname === "/";
-  const isAuthPage = ["/login", "/register"].includes(location.pathname);
   const { authenticated, loading } = useAuth();
   useEffect(() => {}, [authenticated]);
 
@@ -33,26 +31,19 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {!isHomePage && !isAuthPage && <Header />}
+      {authenticated && <Header />}
       <main>
         <Routes location={state?.backgroundLocation || location}>
           {/* Public routes */}
-          <Route
-            path="/"
-            element={
-              !authenticated ? <Homepage /> : <Navigate to="/feed" replace />
-            }
-          />
+          <Route path="/" element={!authenticated ? <Homepage /> : <Feed />} />
           <Route
             path="/login"
-            element={
-              !authenticated ? <Login /> : <Navigate to="/feed" replace />
-            }
+            element={!authenticated ? <Login /> : <Navigate to="/" replace />}
           />
           <Route
             path="/register"
             element={
-              !authenticated ? <Register /> : <Navigate to="/feed" replace />
+              !authenticated ? <Register /> : <Navigate to="/" replace />
             }
           />
 
@@ -61,10 +52,7 @@ function App() {
             path="/messages"
             element={authenticated ? <Messages /> : <Navigate to="/" replace />}
           />
-          <Route
-            path="/feed"
-            element={authenticated ? <Feed /> : <Navigate to="/" replace />}
-          />
+
           <Route
             path="/profile/*"
             element={authenticated ? <Profile /> : <Navigate to="/" replace />}

@@ -38,7 +38,7 @@ export function LoginForm() {
       const data = await auth.login(email, password);
 
       console.log("Login successful:", data);
-      navigate("/feed");
+      navigate(0);
     } catch (error) {
       console.error("Login failed:", error);
       // Optional: Set error state or show toast
