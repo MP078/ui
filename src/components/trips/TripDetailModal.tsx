@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
-import { X, Calendar, Users, MapPin, DollarSign } from 'lucide-react';
-import { Trip } from '../../types/trip';
-import { formatDate } from '../../utils/date';
-import { Button } from '../ui/button';
-import { ConfirmationDialog } from '../ui/confirmation-dialog';
-import { TripOrganizers } from './TripOrganizers';
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  Calendar,
+  Users,
+  MapPin,
+  DollarSign,
+  UserCheck,
+} from "lucide-react";
+import { Trip } from "../../types/trip";
+import { formatDate } from "../../utils/date";
+import { Button } from "../ui/button";
+import { ConfirmationDialog } from "../ui/confirmation-dialog";
+import { TripOrganizers } from "./TripOrganizers";
 
 interface TripDetailModalProps {
   isOpen: boolean;
@@ -12,127 +19,179 @@ interface TripDetailModalProps {
   trip: Trip;
 }
 
-export function TripDetailModal({ isOpen, onClose, trip }: TripDetailModalProps) {
+export function TripDetailModal({
+  isOpen,
+  onClose,
+  trip,
+}: TripDetailModalProps) {
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
   const [showOrganizerSection, setShowOrganizerSection] = useState(false);
-  const currentUser = 'sarahchen'; // This would normally come from auth context
-  //
-  //
-  //
-  //
 
-  ///
-  //
-  //
-  //
-  
+  // ESC key handler
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", handleEscKey);
+
+    // Prevent scrolling on the background
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", handleEscKey);
+      document.body.style.overflow = "";
+    };
+  }, [isOpen, onClose]);
+
+  // Click outside handler
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
   const handleLeaveTrip = () => {
     setShowLeaveConfirmation(true);
   };
 
   const confirmLeaveTrip = () => {
-    console.log('Leaving trip:', trip.tripId);
+    console.log("Leaving trip:", trip.id);
     setShowLeaveConfirmation(false);
     onClose();
   };
 
   const handleRequestOrganizer = () => {
-    console.log('Requesting to be organizer for trip:', trip.tripId);
+    console.log("Requesting to be organizer for trip:", trip.id);
   };
 
   const handleAcceptRequest = (username: string) => {
-    console.log('Accepting organizer request from:', username);
+    console.log("Accepting organizer request from:", username);
   };
 
   const handleRejectRequest = (username: string) => {
-    console.log('Rejecting organizer request from:', username);
+    console.log("Rejecting organizer request from:", username);
   };
 
   const handleRemoveOrganizer = (username: string) => {
-    console.log('Removing organizer:', username);
+    console.log("Removing organizer:", username);
   };
 
-  const isOrganizer = trip.organizers?.some(org => org.username === currentUser);
+  const currentUser = "current_username"; // Replace with actual current user
+  const isOrganizer = trip.organizers?.some(
+    (org) => org.username === currentUser
+  );
 
   if (!isOpen) return null;
 
+  // Ensure trip data or provide defaults
+  const tripId = trip.id
+    ? String(trip.id).substring(0, 6).toUpperCase()
+    : "??????";
+  const tripDestination =
+    trip.destination || trip.title || "Unknown Destination";
+  const tripDescription =
+    trip.description || "No description provided for this trip.";
+  const tripHighlights = trip.highlights || [];
+  const tripOrganizers = trip.organizers || [];
+  const tripCost = trip.cost || "Not specified";
+  const tripMembersCount = trip.members_count || 0;
+
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-        <div className="bg-white rounded-lg w-full max-w-3xl mx-4 my-8 relative">
-          <div className="absolute top-4 right-4 z-10">
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6 overflow-y-auto"
+        onClick={handleBackdropClick}
+      >
+        <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto my-auto mx-auto relative">
+          <div className="sticky top-0 z-10 flex justify-end p-4 bg-gradient-to-b from-black/50 to-transparent">
             <button
               onClick={onClose}
               className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
+              aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Hero Image */}
-          <div className="h-64 relative">
+          <div className="h-full sm:h-64 relative">
             <img
-              src={trip.imageUrl}
-              alt={trip.destination}
-              className="w-full h-full object-cover rounded-t-lg"
+              src={trip.cover_image_url || `/placeholders/trip.png`}
+              alt={tripDestination}
+              className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             <div className="absolute bottom-4 left-6 text-white">
-              <h2 className="text-2xl font-semibold mb-2">{trip.destination}</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold mb-2">
+                {tripDestination}
+              </h2>
               <div className="flex items-center gap-2 text-sm">
                 <MapPin className="w-4 h-4" />
-                <span>Trip ID: {trip.tripId}</span>
+                <span>Trip ID: T{tripId}</span>
               </div>
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {/* Trip Details */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 text-gray-600 mb-1">
                   <Calendar className="w-4 h-4" />
                   <span className="text-sm">Duration</span>
                 </div>
-                <p className="font-medium">
-                  {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
-                </p>
+                {trip.start_date && trip.end_date ? (
+                  <p className="font-medium">
+                    {formatDate(trip.start_date)} - {formatDate(trip.end_date)}
+                  </p>
+                ) : (
+                  <p className="text-gray-500 italic text-sm">
+                    Dates not specified
+                  </p>
+                )}
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 text-gray-600 mb-1">
                   <Users className="w-4 h-4" />
                   <span className="text-sm">Travelers</span>
                 </div>
-                <p className="font-medium">{trip.totalTravelers} People</p>
+                <p className="font-medium">
+                  {tripMembersCount > 0
+                    ? `${tripMembersCount} People`
+                    : "No travelers yet"}
+                </p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 text-gray-600 mb-1">
                   <DollarSign className="w-4 h-4" />
                   <span className="text-sm">Total Cost</span>
                 </div>
-                <p className="font-medium">
-                  {trip.cost?.currency} {trip.cost?.amount}
-                </p>
+                <p className="font-medium">{tripCost}</p>
               </div>
             </div>
 
             {/* Description */}
             <div className="mb-6">
               <h3 className="font-medium mb-2">Description</h3>
-              <p className="text-gray-600">{trip.description}</p>
+              <p className="text-gray-600">{tripDescription}</p>
             </div>
 
             {/* Highlights */}
-            {trip.highlights && trip.highlights.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-medium mb-2">Trip Highlights</h3>
+            <div className="mb-6">
+              <h3 className="font-medium mb-2">Trip Highlights</h3>
+              {tripHighlights.length > 0 ? (
                 <ul className="list-disc list-inside text-gray-600">
-                  {trip.highlights.map((highlight, index) => (
+                  {tripHighlights.map((highlight, index) => (
                     <li key={index}>{highlight}</li>
                   ))}
                 </ul>
-              </div>
-            )}
+              ) : (
+                <p className="text-gray-500 italic">
+                  No highlights have been added for this trip.
+                </p>
+              )}
+            </div>
 
             {/* Organizers & Travel Buddies Section */}
             <div className="mb-6">
@@ -141,66 +200,16 @@ export function TripDetailModal({ isOpen, onClose, trip }: TripDetailModalProps)
                 {isOrganizer && (
                   <Button
                     variant="outline"
-                    onClick={() => setShowOrganizerSection(!showOrganizerSection)}
+                    onClick={() =>
+                      setShowOrganizerSection(!showOrganizerSection)
+                    }
                   >
-                    {showOrganizerSection ? 'View Members' : 'Manage Organizers'}
+                    {showOrganizerSection
+                      ? "View Members"
+                      : "Manage Organizers"}
                   </Button>
                 )}
               </div>
-
-              {showOrganizerSection && isOrganizer ? (
-                <TripOrganizers
-                  organizers={trip.organizers || []}
-                  organizerRequests={trip.organizerRequests || []}
-                  travelBuddies={trip.travelBuddies || []}
-                  createdBy={trip.createdBy}
-                  currentUser={currentUser}
-                  onRequestOrganizer={handleRequestOrganizer}
-                  onAcceptRequest={handleAcceptRequest}
-                  onRejectRequest={handleRejectRequest}
-                  onRemoveOrganizer={handleRemoveOrganizer}
-                />
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Organizers */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Organizers</h4>
-                    {trip.organizers?.map((organizer, index) => (
-                      <div key={index} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg mb-2">
-                        <img
-                          src={organizer.image}
-                          alt={organizer.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div>
-                          <p className="font-medium">{organizer.name}</p>
-                          <p className="text-sm text-gray-600">
-                            {organizer.role === 'creator' ? 'Creator' : 'Organizer'}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Travel Buddies */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Travel Buddies</h4>
-                    {trip.travelBuddies?.map((buddy, index) => (
-                      <div key={index} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg mb-2">
-                        <img
-                          src={buddy.image}
-                          alt={buddy.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div>
-                          <p className="font-medium">{buddy.name}</p>
-                          <p className="text-sm text-gray-600">Travel Partner</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Actions */}
@@ -209,12 +218,13 @@ export function TripDetailModal({ isOpen, onClose, trip }: TripDetailModalProps)
                 Close
               </Button>
               <div className="flex gap-4">
-                {trip.status === 'completed' && trip.reviewStatus === 'pending' && (
-                  <Button>Write Review</Button>
-                )}
-                {trip.status === 'upcoming' && (
-                  <Button 
-                    variant="outline" 
+                {trip.status === "completed" &&
+                  trip.review_status === "pending" && (
+                    <Button>Write Review</Button>
+                  )}
+                {trip.status === "upcoming" && (
+                  <Button
+                    variant="outline"
                     className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
                     onClick={handleLeaveTrip}
                   >
@@ -232,7 +242,7 @@ export function TripDetailModal({ isOpen, onClose, trip }: TripDetailModalProps)
         onClose={() => setShowLeaveConfirmation(false)}
         onConfirm={confirmLeaveTrip}
         title="Leave Trip"
-        message={`Are you sure you want to leave the trip to ${trip.destination}? This action cannot be undone.`}
+        message={`Are you sure you want to leave the trip to ${tripDestination}? This action cannot be undone.`}
         confirmText="Leave Trip"
         type="danger"
       />

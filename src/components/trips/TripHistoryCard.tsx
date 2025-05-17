@@ -1,7 +1,6 @@
-import React from 'react';
-import { Calendar, Users, ChevronRight, Eye, Star } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Trip } from '../../types/trip';
+import { Calendar, Users, ChevronRight, Eye, Star } from "lucide-react";
+import { Button } from "../ui/button";
+import { Trip } from "../../types/trip";
 
 interface TripHistoryCardProps {
   trip: Trip;
@@ -10,57 +9,72 @@ interface TripHistoryCardProps {
   onReview: (tripId: string) => void;
 }
 
-export function TripHistoryCard({ trip, onViewDetails, onViewSummary, onReview }: TripHistoryCardProps) {
-  const showReviewButton = trip.status === 'completed' && trip.reviewStatus === 'pending';
+export function TripHistoryCard({
+  trip,
+  onViewDetails,
+  onViewSummary,
+  onReview,
+}: TripHistoryCardProps) {
+  const showReviewButton =
+    trip.status === "completed" && trip.review_status === "pending";
 
   const getDifficultyColor = (difficulty?: string) => {
     switch (difficulty) {
-      case 'easy':
-        return 'bg-green-100 text-green-800';
-      case 'moderate':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'difficult':
-        return 'bg-red-100 text-red-800';
+      case "easy":
+        return "bg-green-100 text-green-800";
+      case "moderate":
+        return "bg-yellow-100 text-yellow-800";
+      case "difficult":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-brand-orange/50 hover:shadow-md transition-all duration-200">
-      {trip.imageUrl && (
-        <div className="relative h-48 overflow-hidden rounded-t-lg">
-          <img
-            src={trip.imageUrl}
-            alt={trip.destination}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute top-4 right-4 flex gap-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              trip.status === 'ongoing' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-            }`}>
-              {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
+      <div className="relative h-48 overflow-hidden rounded-t-lg">
+        <img
+          src={trip.cover_image_url || `/placeholders/trip.png`}
+          alt={trip.title}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute top-4 right-4 flex gap-2">
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              trip.status === "ongoing"
+                ? "bg-blue-100 text-blue-800"
+                : "bg-green-100 text-green-800"
+            }`}
+          >
+            {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
+          </span>
+          {trip.difficulty && (
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(
+                trip.difficulty
+              )}`}
+            >
+              {trip.difficulty.charAt(0).toUpperCase() +
+                trip.difficulty.slice(1)}
             </span>
-            {trip.difficulty && (
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(trip.difficulty)}`}>
-                {trip.difficulty.charAt(0).toUpperCase() + trip.difficulty.slice(1)}
-              </span>
-            )}
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold mb-1">{trip.destination}</h3>
-            <p className="text-sm text-gray-500 mb-2">Trip ID: {trip.tripId}</p>
+            <h3 className="text-lg font-semibold mb-1">{trip.title}</h3>
+            <p className="text-sm text-gray-500 mb-2">
+              Trip ID: T{trip.id.slice(0, 6).toUpperCase()}
+            </p>
           </div>
-          {(trip.status === 'upcoming' || trip.status === 'ongoing') && (
+          {(trip.status === "upcoming" || trip.status === "ongoing") && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onViewSummary(trip.tripId)}
+              onClick={() => onViewSummary(trip.id)}
               aria-label="View trip summary"
             >
               <Eye className="w-4 h-4" />
@@ -72,22 +86,23 @@ export function TripHistoryCard({ trip, onViewDetails, onViewSummary, onReview }
           <div className="flex items-center gap-2 text-gray-600">
             <Calendar className="w-4 h-4" />
             <span className="text-sm">
-              {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+              {new Date(trip.start_date).toLocaleDateString()} -{" "}
+              {new Date(trip.end_date).toLocaleDateString()}
             </span>
           </div>
-          {trip.totalTravelers && (
+          {trip.total_traveler && (
             <div className="flex items-center gap-2 text-gray-600">
               <Users className="w-4 h-4" />
-              <span className="text-sm">{trip.totalTravelers} Travelers</span>
+              <span className="text-sm">{trip.total_traveler} Travelers</span>
             </div>
           )}
         </div>
 
         {/* Travel Buddies Preview */}
-        {trip.travelBuddies && trip.travelBuddies.length > 0 && (
+        {/* {trip.travel_buddies && trip.travel_buddies.length > 0 && (
           <div className="flex items-center gap-2 mb-4">
             <div className="flex -space-x-2">
-              {trip.travelBuddies.slice(0, 3).map((buddy, index) => (
+              {trip.travel_buddies.slice(0, 3).map((buddy, index) => (
                 <img
                   key={index}
                   src={buddy.image}
@@ -96,15 +111,15 @@ export function TripHistoryCard({ trip, onViewDetails, onViewSummary, onReview }
                   title={buddy.name}
                 />
               ))}
-              {trip.travelBuddies.length > 3 && (
+              {trip.travel_buddies.length > 3 && (
                 <div className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs text-gray-600">
-                  +{trip.travelBuddies.length - 3}
+                  +{trip.travel_buddies.length - 3}
                 </div>
               )}
             </div>
             <span className="text-sm text-gray-600">Travel Buddies</span>
           </div>
-        )}
+        )} */}
 
         <p className="text-gray-600 text-sm mb-6 line-clamp-2">
           {trip.description}
@@ -112,7 +127,7 @@ export function TripHistoryCard({ trip, onViewDetails, onViewSummary, onReview }
 
         <div className="flex items-center justify-between">
           <Button
-            onClick={() => onViewDetails(trip.tripId)}
+            onClick={() => onViewDetails(trip.id)}
             className="flex items-center gap-2"
           >
             View Full Details
@@ -122,7 +137,7 @@ export function TripHistoryCard({ trip, onViewDetails, onViewSummary, onReview }
           {showReviewButton && (
             <Button
               variant="outline"
-              onClick={() => onReview(trip.tripId)}
+              onClick={() => onReview(trip.id)}
               className="flex items-center gap-2 bg-brand-orange/10 hover:bg-brand-orange/20 border-brand-orange/20 text-brand-orange"
             >
               <Star className="w-4 h-4" />

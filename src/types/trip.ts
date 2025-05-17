@@ -1,48 +1,55 @@
 export interface Trip {
-  tripId: string;
-  destination: string;
-  startDate: string;
-  endDate: string;
-  status: 'upcoming' | 'ongoing' | 'completed';
-  tripStatus: 'open' | 'full' | 'in-progress';
-  description: string;
-  reviewStatus: 'pending' | 'completed' | 'not_required';
-  imageUrl?: string;
-  totalTravelers?: number;
-  highlights?: string[];
-  cost?: {
-    amount: number;
-    currency: string;
-  };
-  travelBuddies?: TravelBuddy[];
-  organizers?: Organizer[];
-  organizerRequests?: OrganizerRequest[];
-  createdBy: string;
-  difficulty?: 'easy' | 'moderate' | 'difficult';
-  summary?: TripSummary;
+    destination: string | undefined;
+    id: string;
+    title?: string;
+    location: string;
+    start_date: string;
+    end_date: string;
+    maximum_participants?: number;
+    activities?: string[];
+    description: string;
+    difficulty?: 'easy' | 'medium' | 'difficult';
+    created_at?: string;
+    updated_at?: string;
+    can_join?: boolean;
+    members_count?: number;
+    cover_image_url?: string;
+    participation_status?: string;
+    status: 'upcoming' | 'ongoing' | 'completed';
+    trip_status: 'open' | 'full' | 'in-progress';
+    review_status: 'pending' | 'completed' | 'not_required';
+    image_url?: string;
+    total_traveler?: number;
+    highlights?: string[];
+    cost: string;
+    travel_buddies?: TravelBuddy[];
+    organizers?: Organizer[];
+    organizer_requests?: OrganizerRequest[];
+    created_by: string;
+    image_urls?: string[];
 }
 
 export interface TravelBuddy {
-  name: string;
-  username: string;
-  image: string;
+    name: string;
+    username: string;
+    image: string;
 }
 
 export interface Organizer extends TravelBuddy {
-  role: 'creator' | 'organizer';
-  joinedAt: string;
+    role: 'creator' | 'organizer';
+    joined_at: string;
 }
 
 export interface OrganizerRequest extends TravelBuddy {
-  requestedAt: string;
-  status: 'pending' | 'accepted' | 'rejected';
+    requested_at: string;
+    status: 'pending' | 'accepted' | 'rejected';
 }
 
 export type TripStatus = Trip['status'];
 
 export interface TripSummary {
-  totalDays: number;
-  totalCost: number;
-  highlights: string[];
-  photos: string[];
+    total_days: number;
+    total_cost: number;
+    highlights: string[];
+    photos: string[];
 }
