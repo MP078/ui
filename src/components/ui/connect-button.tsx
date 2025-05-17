@@ -1,23 +1,24 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "./button";
 import { ConfirmationDialog } from "./confirmation-dialog";
 
 export interface ConnectButtonProps {
   username: string;
   name: string;
-  status: "none" | "requested" | "connected";
+  status: "none" | "sent" | "friends" | "received";
   variant?: "default" | "outline";
   size?: "sm" | "md" | "lg";
   className?: string;
   onConnect: (username: string) => void;
   onDisconnect: (username: string) => void;
+  onCancel: (username: string) => void;
 }
 
 export function ConnectButton({
+  onCancel,
   username,
   name,
   status,
-  variant = "default",
   size = "md",
   className,
   onConnect,
@@ -26,16 +27,14 @@ export function ConnectButton({
   const [showConnectConfirmation, setShowConnectConfirmation] = useState(false);
   const [showDisconnectConfirmation, setShowDisconnectConfirmation] =
     useState(false);
-  const [showUnrequestConfirmation, setShowUnrequestConfirmation] =
-    useState(false);
 
   const handleClick = () => {
     switch (status) {
-      case "connected":
+      case "friends":
         setShowDisconnectConfirmation(true);
         break;
-      case "requested":
-        setShowUnrequestConfirmation(true);
+      case "sent":
+        onCancel(username);
         break;
       case "none":
         setShowConnectConfirmation(true);
@@ -45,24 +44,19 @@ export function ConnectButton({
 
   const getButtonText = () => {
     switch (status) {
-      case "connected":
+      case "friends":
         return "Connected";
-      case "requested":
+      case "sent":
         return "Requested";
+      case "received":
+        return "Accept";
       default:
         return "Connect";
     }
   };
 
-  const getButtonStyle = () => {
-    if (status === "none") {
-      return variant;
-    }
-    return "outline";
-  };
-
   const getButtonHoverClass = () => {
-    if (status === "requested") {
+    if (status === "sent") {
       return "hover:bg-red-50 hover:text-red-600 hover:border-red-200";
     }
     return "";
@@ -71,7 +65,7 @@ export function ConnectButton({
   return (
     <>
       <Button
-        variant={getButtonStyle()}
+        variant="default"
         size={size}
         onClick={handleClick}
         className={`${className} ${getButtonHoverClass()}`}
@@ -90,19 +84,6 @@ export function ConnectButton({
         message={`Would you like to connect with ${name}? They will be notified of your request.`}
         confirmText="Send Request"
         type="info"
-      />
-
-      <ConfirmationDialog
-        isOpen={showUnrequestConfirmation}
-        onClose={() => setShowUnrequestConfirmation(false)}
-        onConfirm={() => {
-          onDisconnect(username);
-          setShowUnrequestConfirmation(false);
-        }}
-        title="Cancel Connection Request"
-        message={`Would you like to cancel your connection request to ${name}?`}
-        confirmText="Cancel Request"
-        type="warning"
       />
 
       <ConfirmationDialog

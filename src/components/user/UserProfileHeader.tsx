@@ -1,4 +1,3 @@
-import React from "react";
 import { UserProfile } from "../../types/user";
 import { Button } from "../ui/button";
 import { MessageCircle } from "lucide-react";
@@ -6,19 +5,22 @@ import { ConnectButton } from "../ui/connect-button";
 
 interface UserProfileHeaderProps {
   user: UserProfile;
-  connectionStatus: "none" | "requested" | "connected";
+  connectionStatus: "none" | "sent" | "received" | "friends";
   onConnect: (userId: string) => void;
   onDisconnect: (userId: string) => void;
   onMessage: () => void;
+  onCancel: () => void;
 }
 
 export function UserProfileHeader({
+  onCancel,
   user,
   connectionStatus,
   onConnect,
   onDisconnect,
   onMessage,
 }: UserProfileHeaderProps) {
+  console.log(connectionStatus);
   return (
     <div className="relative">
       <div className="h-64 w-full">
@@ -51,6 +53,7 @@ export function UserProfileHeader({
           status={connectionStatus}
           onConnect={onConnect}
           onDisconnect={onDisconnect}
+          onCancel={onCancel}
         />
         <Button
           onClick={onMessage}

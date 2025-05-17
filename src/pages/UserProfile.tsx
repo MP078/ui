@@ -9,7 +9,6 @@ import { UserReviews } from "../components/user/UserReviews";
 import { UserGuides } from "../components/user/UserGuides";
 import { UserActivity } from "../components/user/UserActivity";
 import { UserAchievements } from "../components/user/UserAchievements";
-import { ConfirmationDialog } from "../components/ui/confirmation-dialog";
 import { userService } from "../services/userService";
 import { UserProfile as UserProfileType } from "../types/user";
 import { api } from "../lib/api";
@@ -28,11 +27,8 @@ export default function UserProfile() {
   const [activities, setActivities] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState<
-    "none" | "requested" | "connected"
+    "none" | "sent" | "friends" | "received"
   >("none");
-  const [showConnectConfirmation, setShowConnectConfirmation] = useState(false);
-  const [showDisconnectConfirmation, setShowDisconnectConfirmation] =
-    useState(false);
 
   const [loading, setLoading] = useState({
     profile: true,
@@ -106,7 +102,19 @@ export default function UserProfile() {
           friendship_status,
         };
         setUser(formattedUser);
+
         setLoading((prev) => ({ ...prev, profile: false }));
+        setConnectionStatus(
+          ["none", "sent", "friends", "received"].includes(
+            formattedUser.friendship_status
+          )
+            ? (formattedUser.friendship_status as
+                | "none"
+                | "sent"
+                | "friends"
+                | "received")
+            : "none"
+        );
       } catch (err: unknown) {
         setError((prev) => ({
           ...prev,
@@ -176,36 +184,37 @@ export default function UserProfile() {
     fetchUserAchievements();
   }, [currentUser, navigate, username]);
 
-  const handleConnect = () => {
-    setShowConnectConfirmation(true);
-  };
-
-  const handleDisconnect = () => {
-    setShowDisconnectConfirmation(true);
-  };
-
-  const handleMessage = () => {
-    navigate("/messages");
-  };
-
-  const handleConfirmConnect = async () => {
+  const handleConnect = async () => {
     try {
-      await userService.connectWithUser(username);
-      setConnectionStatus("requested");
-      setShowConnectConfirmation(false);
+      await api
+        .post(`/friendships/${username}`)
+        .then(() => setConnectionStatus("sent"));
     } catch (err) {
       console.error("Failed to connect with user:", err);
     }
   };
-
-  const handleConfirmDisconnect = async () => {
+  const handleCancel = async () => {
     try {
-      await userService.disconnectFromUser(username);
-      setConnectionStatus("none");
-      setShowDisconnectConfirmation(false);
+      await api
+        .delete(`/friendships/${username}`)
+        .then(() => setConnectionStatus("none"));
     } catch (err) {
-      console.error("Failed to disconnect from user:", err);
+      console.error("Failed to cancel friendship:", err);
     }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await api
+        .delete(`/friendships/${username}`)
+        .then(() => setConnectionStatus("none"));
+    } catch (err) {
+      console.error("Failed to disconnect friendship:", err);
+    }
+  };
+
+  const handleMessage = () => {
+    navigate("/messages");
   };
 
   if (loading.profile && !error.profile) {
@@ -246,6 +255,7 @@ export default function UserProfile() {
           user={user}
           connectionStatus={connectionStatus}
           onConnect={handleConnect}
+          onCancel={handleCancel}
           onDisconnect={handleDisconnect}
           onMessage={handleMessage}
         />
@@ -298,26 +308,6 @@ export default function UserProfile() {
           </div>
         </div>
       </div>
-
-      <ConfirmationDialog
-        isOpen={showConnectConfirmation}
-        onClose={() => setShowConnectConfirmation(false)}
-        onConfirm={handleConfirmConnect}
-        title="Connect with Traveler"
-        message={`Would you like to connect with ${user.name}? They will be notified of your request.`}
-        confirmText="Send Request"
-        type="info"
-      />
-
-      <ConfirmationDialog
-        isOpen={showDisconnectConfirmation}
-        onClose={() => setShowDisconnectConfirmation(false)}
-        onConfirm={handleConfirmDisconnect}
-        title="Disconnect from Traveler"
-        message={`Are you sure you want to disconnect from ${user.name}? This action cannot be undone.`}
-        confirmText="Disconnect"
-        type="danger"
-      />
     </div>
   );
 }
