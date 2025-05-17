@@ -26,6 +26,7 @@ export default function Feed() {
       type PostType = {
         id: string;
         user: {
+          id: string;
           name: string;
           profile_image: string;
           verified: boolean;
@@ -44,6 +45,7 @@ export default function Feed() {
         return {
           id: typedPost.id,
           user: {
+            id: typedPost.user.id,
             name: typedPost.user.name,
             image: typedPost.user.profile_image,
             location: typedPost.destination,

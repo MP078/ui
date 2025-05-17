@@ -3,10 +3,12 @@ import { Heart, MessageCircle, Share2, MoreHorizontal, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { CommentModal } from "../comments/CommentModal";
 import { api } from "../../lib/api";
+import { getAvatarNumber } from "../../context/UserContext";
 
 export interface FeedPostProps {
   id: string;
   user: {
+    id: string;
     name: string;
     image: string;
     location: string;
@@ -109,7 +111,7 @@ export function FeedPost({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <img
-            src={user.image}
+            src={user.image || `/avatars/${getAvatarNumber(user.id)}.png`}
             alt={user.name}
             className="w-10 h-10 rounded-full object-cover"
           />

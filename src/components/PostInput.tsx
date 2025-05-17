@@ -132,7 +132,7 @@ export default function PostInput({ onPostSuccess }: PostInputProps) {
           {previewUrls.map((url, index) => (
             <div key={index} className="relative">
               <img
-                src={user?.image_url}
+                src={url}
                 alt={`Preview ${index + 1}`}
                 className="w-20 h-20 object-cover rounded-lg"
               />
