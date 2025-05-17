@@ -17,6 +17,7 @@ export type PostType = {
     name: string;
     profile_image: string;
     verified: boolean;
+    username: string;
   };
   destination: string;
   content: string;
@@ -45,6 +46,7 @@ export default function Feed() {
         return {
           id: typedPost.id,
           user: {
+            username: typedPost.user.username,
             id: typedPost.user.id,
             name: typedPost.user.name,
             image: typedPost.user.profile_image,
@@ -107,6 +109,10 @@ export default function Feed() {
           placeholder="Search destinations or..."
           onSearch={(query) => console.log("Searching:", query)}
           className="mb-4"
+          value={""}
+          onChange={function (): void {
+            throw new Error("Function not implemented.");
+          }}
         />
         <UpcomingTrips_feed />
         <SuggestedBuddies />

@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { CommentModal } from "../comments/CommentModal";
 import { api } from "../../lib/api";
 import { getAvatarNumber } from "../../context/UserContext";
+import { Link } from "react-router-dom";
 
 export interface FeedPostProps {
   id: string;
@@ -13,6 +14,7 @@ export interface FeedPostProps {
     image: string;
     location: string;
     verified?: boolean;
+    username: string;
   };
   content: {
     text: string;
@@ -117,7 +119,12 @@ export function FeedPost({
           />
           <div>
             <div className="flex items-center gap-1">
-              <span className="font-medium">{user.name}</span>
+              <Link
+                to={`/${user.username}`}
+                className="font-semibold text-gray-800"
+              >
+                <span className="font-medium">{user.name}</span>
+              </Link>
               {user.verified && <span className="text-brand-orange">✓</span>}
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
