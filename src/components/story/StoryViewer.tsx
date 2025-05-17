@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   X,
   ChevronLeft,
@@ -47,6 +53,7 @@ export function StoryViewerModal({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isPaused] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Build flat array and set initial index
   useEffect(() => {
@@ -165,26 +172,74 @@ export function StoryViewerModal({
     }
   }, [isOpen]);
 
+  // Navigation handlers (must be above useEffect for keyboard)
+  const handlePrevStory = useCallback(
+    (e?: React.MouseEvent | React.TouchEvent | KeyboardEvent) => {
+      if (e && "stopPropagation" in e) e.stopPropagation();
+      const prevIdx = getPrevStoryIndexForUser();
+      if (prevIdx !== null && prevIdx >= 0) {
+        setCurrentIndex(prevIdx);
+        setProgress(0);
+      }
+    },
+    [getPrevStoryIndexForUser]
+  );
+  const handleNextStory = useCallback(
+    (e?: React.MouseEvent | React.TouchEvent | KeyboardEvent) => {
+      if (e && "stopPropagation" in e) e.stopPropagation();
+      const nextIdx = getNextStoryIndexForUser();
+      if (nextIdx !== null && nextIdx >= 0) {
+        setCurrentIndex(nextIdx);
+        setProgress(0);
+      } else {
+        onClose();
+      }
+    },
+    [getNextStoryIndexForUser, onClose]
+  );
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        handlePrevStory();
+      } else if (e.key === "ArrowRight") {
+        handleNextStory();
+      } else if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose, handlePrevStory, handleNextStory]);
+
+  // Tap/click navigation on image halves
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const bounds = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - bounds.left;
+    if (x < bounds.width / 2) {
+      handlePrevStory(e);
+    } else {
+      handleNextStory(e);
+    }
+  };
+  // Touch navigation for mobile
+  const handleImageTouch = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const touch = e.touches[0];
+    const bounds = containerRef.current.getBoundingClientRect();
+    const x = touch.clientX - bounds.left;
+    if (x < bounds.width / 2) {
+      handlePrevStory(e);
+    } else {
+      handleNextStory(e);
+    }
+  };
+
   if (!isOpen || allStories.length === 0 || !user || !story) return null;
 
-  const handlePrevStory = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const prevIdx = getPrevStoryIndexForUser();
-    if (prevIdx !== null && prevIdx >= 0) {
-      setCurrentIndex(prevIdx);
-      setProgress(0);
-    }
-  };
-  const handleNextStory = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const nextIdx = getNextStoryIndexForUser();
-    if (nextIdx !== null && nextIdx >= 0) {
-      setCurrentIndex(nextIdx);
-      setProgress(0);
-    } else {
-      onClose();
-    }
-  };
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
   };
@@ -211,7 +266,26 @@ export function StoryViewerModal({
       >
         <ChevronRight size={32} />
       </button>
-      <div className="relative w-full max-w-[380px] aspect-[9/16] bg-black overflow-hidden rounded-2xl">
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-[380px] aspect-[9/16] bg-black overflow-hidden rounded-2xl select-none"
+        onClick={handleImageClick}
+        onTouchStart={handleImageTouch}
+        tabIndex={-1}
+        aria-label="Story viewer"
+        role="region"
+      >
+        {/* Overlay for left/right tap/click navigation (for accessibility, pointer events only) */}
+        <div
+          className="absolute left-0 top-0 w-1/2 h-full z-30"
+          style={{ cursor: "pointer" }}
+          aria-label="Previous story"
+        />
+        <div
+          className="absolute right-0 top-0 w-1/2 h-full z-30"
+          style={{ cursor: "pointer" }}
+          aria-label="Next story"
+        />
         <img
           src={story.image}
           alt={user.name}
