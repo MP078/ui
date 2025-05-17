@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Search, Check, X, Clock } from 'lucide-react';
-import { SearchBar } from '../components/search/SearchBar';
-import { ConfirmationDialog } from '../components/ui/confirmation-dialog';
+import { useEffect, useState } from "react";
+import { Users, Check, X, Clock } from "lucide-react";
+import { SearchBar } from "../components/search/SearchBar";
+import { ConfirmationDialog } from "../components/ui/confirmation-dialog";
+import { api } from "../lib/api";
+import { timeAgo } from "../utils/timeago";
 
 interface ConnectionRequest {
   id: string;
@@ -12,72 +14,80 @@ interface ConnectionRequest {
     location: string;
     mutualFriends: number;
     timestamp: string;
+    username: string;
   };
-  status: 'pending' | 'accepted' | 'rejected';
-  type: 'received' | 'sent';
+  status: "pending" | "accepted" | "rejected";
+  type: "received" | "sent";
 }
 
-const requests: ConnectionRequest[] = [
-  {
-    id: '1',
-    user: {
-      id: 'user1',
-      name: 'Alex Thompson',
-      image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
-      location: 'London, UK',
-      mutualFriends: 5,
-      timestamp: '2 hours ago'
-    },
-    status: 'pending',
-    type: 'received'
-  },
-  {
-    id: '2',
-    user: {
-      id: 'user2',
-      name: 'Sarah Wilson',
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
-      location: 'Sydney, Australia',
-      mutualFriends: 3,
-      timestamp: '5 hours ago'
-    },
-    status: 'pending',
-    type: 'received'
-  },
-  {
-    id: '3',
-    user: {
-      id: 'user3',
-      name: 'Mike Chen',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
-      location: 'Toronto, Canada',
-      mutualFriends: 8,
-      timestamp: '1 day ago'
-    },
-    status: 'pending',
-    type: 'sent'
-  }
-];
+interface ApiRequestItem {
+  id: string;
+  sender_id?: string;
+  receiver_id?: string;
+  name: string;
+  avatar_url: string;
+  location: string;
+  mutual_friends?: number;
+  created_at: string;
+  username: string;
+  status: "pending" | "accepted" | "rejected";
+}
 
 export default function ConnectionRequests() {
-  const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [connectionRequests, setConnectionRequests] = useState(requests);
-  const [selectedRequest, setSelectedRequest] = useState<ConnectionRequest | null>(null);
+  const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [receivedRequests, setReceivedRequests] = useState<ConnectionRequest[]>(
+    []
+  );
+  const [sentRequests, setSentRequests] = useState<ConnectionRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] =
+    useState<ConnectionRequest | null>(null);
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
-  // Filter requests based on search query and active tab
-  const filteredRequests = connectionRequests.filter(request => {
-    const matchesSearch = 
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const [receivedRes, sentRes] = await Promise.all([
+          api.get<{ data: ApiRequestItem[] }>("/friendships/received_requests"),
+          api.get<{ data: ApiRequestItem[] }>("/friendships/sent_requests"),
+        ]);
+
+        const mapData = (items: ApiRequestItem[], type: "received" | "sent") =>
+          items.map((item) => ({
+            id: item.id,
+            user: {
+              id: item.sender_id ?? item.receiver_id ?? "",
+              name: item.name,
+              image: item.avatar_url,
+              location: item.location,
+              mutualFriends: item.mutual_friends || 0,
+              timestamp: item.created_at,
+              username: item.username,
+            },
+            status: item.status,
+            type,
+          }));
+
+        setReceivedRequests(mapData(receivedRes.data.data, "received"));
+        setSentRequests(mapData(sentRes.data.data, "sent"));
+      } catch (error) {
+        console.error("Error fetching connection requests:", error);
+      }
+    };
+
+    fetchRequests();
+  }, []);
+
+  const allRequests =
+    activeTab === "received" ? receivedRequests : sentRequests;
+
+  const filteredRequests = allRequests.filter((request) => {
+    const matchesSearch =
       request.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       request.user.location.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesTab = request.type === activeTab;
-    const isPending = request.status === 'pending';
-    
-    return matchesSearch && matchesTab && isPending;
+    return matchesSearch && request.status === "pending";
   });
 
   const handleAccept = (request: ConnectionRequest) => {
@@ -95,47 +105,60 @@ export default function ConnectionRequests() {
     setShowCancelDialog(true);
   };
 
-  const confirmAccept = () => {
+  const confirmAccept = async () => {
     if (selectedRequest) {
-      setConnectionRequests(prev => 
-        prev.map(req => 
-          req.id === selectedRequest.id 
-            ? { ...req, status: 'accepted' as const } 
-            : req
-        )
-      );
-      setShowAcceptDialog(false);
-      setSelectedRequest(null);
+      try {
+        await api.post(`/friendships/${selectedRequest.user.username}/accept`);
+        removeRequest(selectedRequest.id, "received");
+      } catch (error) {
+        console.error("Failed to accept request:", error);
+      } finally {
+        setShowAcceptDialog(false);
+        setSelectedRequest(null);
+      }
     }
   };
 
-  const confirmReject = () => {
+  const confirmReject = async () => {
     if (selectedRequest) {
-      setConnectionRequests(prev => 
-        prev.map(req => 
-          req.id === selectedRequest.id 
-            ? { ...req, status: 'rejected' as const } 
-            : req
-        )
-      );
-      setShowRejectDialog(false);
-      setSelectedRequest(null);
+      try {
+        await api.delete(`/friendships/${selectedRequest.user.username}`);
+        removeRequest(selectedRequest.id, "received");
+      } catch (error) {
+        console.error("Failed to reject request:", error);
+      } finally {
+        setShowRejectDialog(false);
+        setSelectedRequest(null);
+      }
     }
   };
 
-  const confirmCancel = () => {
+  const confirmCancel = async () => {
     if (selectedRequest) {
-      setConnectionRequests(prev => 
-        prev.filter(req => req.id !== selectedRequest.id)
-      );
-      setShowCancelDialog(false);
-      setSelectedRequest(null);
+      try {
+        await api.post(`/friendships/${selectedRequest.user.username}/cancel`);
+        removeRequest(selectedRequest.id, "sent");
+      } catch (error) {
+        console.error("Failed to cancel request:", error);
+      } finally {
+        setShowCancelDialog(false);
+        setSelectedRequest(null);
+      }
     }
   };
 
-  const getPendingCount = (type: 'received' | 'sent') => {
-    return connectionRequests.filter(r => r.type === type && r.status === 'pending').length;
+  const removeRequest = (id: string, type: "received" | "sent") => {
+    if (type === "received") {
+      setReceivedRequests((prev) => prev.filter((r) => r.id !== id));
+    } else {
+      setSentRequests((prev) => prev.filter((r) => r.id !== id));
+    }
   };
+
+  const getPendingCount = (type: "received" | "sent") =>
+    (type === "received" ? receivedRequests : sentRequests).filter(
+      (r) => r.status === "pending"
+    ).length;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -149,31 +172,31 @@ export default function ConnectionRequests() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex gap-4">
               <button
-                onClick={() => setActiveTab('received')}
+                onClick={() => setActiveTab("received")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'received'
-                    ? 'bg-brand-orange text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  activeTab === "received"
+                    ? "bg-brand-orange text-white"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <Users className="w-5 h-5" />
                 Received
                 <span className="bg-white/20 px-2 py-0.5 rounded-full text-sm">
-                  {getPendingCount('received')}
+                  {getPendingCount("received")}
                 </span>
               </button>
               <button
-                onClick={() => setActiveTab('sent')}
+                onClick={() => setActiveTab("sent")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'sent'
-                    ? 'bg-brand-orange text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  activeTab === "sent"
+                    ? "bg-brand-orange text-white"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <Clock className="w-5 h-5" />
                 Sent
                 <span className="bg-white/20 px-2 py-0.5 rounded-full text-sm">
-                  {getPendingCount('sent')}
+                  {getPendingCount("sent")}
                 </span>
               </button>
             </div>
@@ -191,7 +214,7 @@ export default function ConnectionRequests() {
                 <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-500 text-lg">
                   {searchQuery
-                    ? 'No requests found matching your search'
+                    ? "No requests found matching your search"
                     : `No ${activeTab} requests found`}
                 </p>
               </div>
@@ -209,7 +232,9 @@ export default function ConnectionRequests() {
                     />
                     <div>
                       <h3 className="font-medium">{request.user.name}</h3>
-                      <p className="text-sm text-gray-600">{request.user.location}</p>
+                      <p className="text-sm text-gray-600">
+                        {request.user.location}
+                      </p>
                       <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                         <Users className="w-3 h-3" />
                         {request.user.mutualFriends} mutual connections
@@ -218,8 +243,10 @@ export default function ConnectionRequests() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-500">{request.user.timestamp}</span>
-                    {request.type === 'received' ? (
+                    <span className="text-sm text-gray-500">
+                      {timeAgo(request.user.timestamp)}
+                    </span>
+                    {request.type === "received" ? (
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleAccept(request)}

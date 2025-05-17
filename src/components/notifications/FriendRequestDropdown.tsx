@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../lib/api";
+import { timeAgo } from "../../utils/timeago";
 interface FriendRequest {
   id: string;
   status: string;
@@ -98,31 +99,7 @@ export function FriendRequestDropdown({
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium">{request.name}</h4>
                   <span className="text-xs text-gray-500">
-                    {(() => {
-                      const createdAt = new Date(request.created_at);
-                      const now = new Date();
-                      const diffMs = now.getTime() - createdAt.getTime();
-                      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                      const diffDays = Math.floor(
-                        diffMs / (1000 * 60 * 60 * 24)
-                      );
-                      const diffYears =
-                        now.getFullYear() - createdAt.getFullYear();
-
-                      if (diffYears > 0) {
-                        return `${diffYears} year${
-                          diffYears > 1 ? "s" : ""
-                        } ago`;
-                      } else if (diffDays > 0) {
-                        return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
-                      } else if (diffHours > 0) {
-                        return `${diffHours} hour${
-                          diffHours > 1 ? "s" : ""
-                        } ago`;
-                      } else {
-                        return "Just now";
-                      }
-                    })()}
+                    {timeAgo(request.created_at)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mb-1">{request.location}</p>
