@@ -115,12 +115,10 @@ export function EditProfileModal({
         }
       });
       if (avatarFile) {
-        formDataToSend.append("profile_image", avatarFile);
+        formDataToSend.append("avatar", avatarFile);
       }
 
-      const res = await api.patch("/users", formDataToSend, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await api.patch("/users", formDataToSend);
       const backendUser = res.data.data || res.data;
       // Defensive: always set image_url and verified
       setUser && setUser({
