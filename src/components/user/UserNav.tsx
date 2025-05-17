@@ -1,19 +1,18 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from "react-router-dom";
 
 interface UserNavProps {
-  userId: string;
+  username: string;
 }
 
-export function UserNav({ userId }: UserNavProps) {
+export function UserNav({ username }: UserNavProps) {
   const location = useLocation();
-  
+
   const navItems = [
-    { path: `/user/${userId}`, label: 'Posts' },
-    { path: `/user/${userId}/photos`, label: 'Photos' },
-    { path: `/user/${userId}/reviews`, label: 'Reviews' },
-    { path: `/user/${userId}/guides`, label: 'Guides' },
-    { path: `/user/${userId}/about`, label: 'About' },
+    { path: `/user/${username}`, label: "Posts" },
+    { path: `/user/${username}/photos`, label: "Photos" },
+    { path: `/user/${username}/reviews`, label: "Reviews" },
+    { path: `/user/${username}/guides`, label: "Guides" },
+    { path: `/user/${username}/about`, label: "About" },
   ];
 
   return (
@@ -26,8 +25,8 @@ export function UserNav({ userId }: UserNavProps) {
               to={item.path}
               className={`py-4 px-2 font-medium relative whitespace-nowrap ${
                 location.pathname === item.path
-                  ? 'text-brand-orange'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? "text-brand-orange"
+                  : "text-gray-600 hover:text-gray-900"
               }`}
             >
               {item.label}

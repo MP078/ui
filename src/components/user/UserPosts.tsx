@@ -1,15 +1,55 @@
-import React from 'react';
-import { FeedPost } from '../feed/FeedPost';
-import { UserPost } from '../../types/user';
+import { useEffect, useState } from "react";
+import { FeedPost } from "../feed/FeedPost";
+import { api } from "../../lib/api";
+import { PostType } from "../../pages/Feed";
 
-interface UserPostsProps {
-  posts: UserPost[];
-  isLoading?: boolean;
-  error?: string;
-}
+export function UserPosts({ username }: { username: string }) {
+  const [posts, setFeedPosts] = useState<
+    Array<ReturnType<typeof transformPost>>
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const transformPost = (post: PostType) => ({
+    id: post.id,
+    user: {
+      id: post.user.id,
+      name: post.user.name,
+      image: post.user.profile_image,
+      location: post.destination,
+      verified: post.user.verified,
+    },
+    content: {
+      text: post.content,
+      images: post.images.map((img) => img.image),
+      timestamp: new Date(post.created_at).toLocaleString(),
+    },
+    engagement: {
+      likes: post.likes,
+      comments: post.comments_count,
+      shares: 0,
+    },
+    liked: post.liked,
+  });
 
-export function UserPosts({ posts, isLoading, error }: UserPostsProps) {
-  if (isLoading) {
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await api.get(`/posts?username=${username}`);
+        const data = res.data;
+
+        const transformed = data.data.map((post: unknown) =>
+          transformPost(post as PostType)
+        );
+
+        setFeedPosts(transformed);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch feed:", err);
+        setLoading(false);
+      }
+    };
+    fetchPosts();
+  }, []);
+  if (loading) {
     return (
       <div className="space-y-6">
         {[1, 2].map((i) => (
@@ -35,13 +75,13 @@ export function UserPosts({ posts, isLoading, error }: UserPostsProps) {
     );
   }
 
-  if (error) {
-    return (
-      <div className="bg-red-50 p-4 rounded-lg text-red-600">
-        <p>Error loading posts: {error}</p>
-      </div>
-    );
-  }
+  //   if (error) {
+  //     return (
+  //       <div className="bg-red-50 p-4 rounded-lg text-red-600">
+  //         <p>Error loading posts: {error}</p>
+  //       </div>
+  //     );
+  //   }
 
   if (posts.length === 0) {
     return (

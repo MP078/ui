@@ -5,9 +5,8 @@ import { NotificationDropdown } from "./notifications/NotificationDropdown";
 import { FriendRequestDropdown } from "./notifications/FriendRequestDropdown";
 import { ConfirmationDialog } from "./ui/confirmation-dialog";
 import { auth } from "../lib/api";
-import { User } from "../context/UserContext";
 
-export default function Header({ image_url }: User) {
+export default function Header({ image_url }: { image_url: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);

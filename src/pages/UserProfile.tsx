@@ -4,23 +4,25 @@ import { UserProfileHeader } from "../components/user/UserProfileHeader";
 import { UserProfileInfo } from "../components/user/UserProfileInfo";
 import { UserNav } from "../components/user/UserNav";
 import { UserPosts } from "../components/user/UserPosts";
-import { UserPhotos } from "../components/user/UserPhotos";
+import UserPhotos from "../components/user/UserPhotos";
 import { UserReviews } from "../components/user/UserReviews";
 import { UserGuides } from "../components/user/UserGuides";
-import { UserAbout } from "../components/user/UserAbout";
 import { UserActivity } from "../components/user/UserActivity";
 import { UserAchievements } from "../components/user/UserAchievements";
 import { ConfirmationDialog } from "../components/ui/confirmation-dialog";
 import { userService } from "../services/userService";
 import { UserProfile as UserProfileType } from "../types/user";
+import { api } from "../lib/api";
+import { getAvatarNumber } from "../context/UserContext";
+import { useContext } from "react";
+import { UserContext } from "../context/UserContext";
+import ProfileAbout from "../components/profile/ProfileAbout";
 
 export default function UserProfile() {
-  const { userId = "" } = useParams();
+  const { username = "" } = useParams();
   const navigate = useNavigate();
 
   const [user, setUser] = useState<UserProfileType | null>(null);
-  const [posts, setPosts] = useState([]);
-  const [photos, setPhotos] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [guides, setGuides] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -34,7 +36,6 @@ export default function UserProfile() {
 
   const [loading, setLoading] = useState({
     profile: true,
-    posts: true,
     photos: true,
     reviews: true,
     guides: true,
@@ -44,19 +45,67 @@ export default function UserProfile() {
 
   const [error, setError] = useState({
     profile: "",
-    posts: "",
-    photos: "",
     reviews: "",
     guides: "",
     activities: "",
     achievements: "",
   });
+  const { user: currentUser } = useContext(UserContext);
 
   useEffect(() => {
+    if (currentUser && currentUser.username === username) {
+      navigate("/profile", { replace: true });
+      return;
+    }
     const fetchUserProfile = async () => {
       try {
-        const userData = await userService.getUserProfile(userId);
-        setUser(userData);
+        setLoading((prev) => ({ ...prev, profile: true }));
+        const response = await api.get(`/users/${username}`);
+        const userData = response.data.data;
+        const {
+          id,
+          name,
+          email,
+          profile_image,
+          verified,
+          total_trips,
+          travel_days,
+          connections,
+          member_since,
+          interests,
+          languages,
+          website,
+          certifications,
+          bio,
+          location,
+          about,
+          phone,
+          friendship_status,
+        } = userData;
+
+        const formattedUser: UserProfileType = {
+          id,
+          name,
+          username,
+          email,
+          image_url:
+            profile_image || `/avatars/${getAvatarNumber(id.toString())}.png`,
+          verified,
+          total_trips,
+          travel_days,
+          connections,
+          member_since,
+          interests,
+          languages,
+          website,
+          certifications,
+          bio,
+          about,
+          phone,
+          location,
+          friendship_status,
+        };
+        setUser(formattedUser);
         setLoading((prev) => ({ ...prev, profile: false }));
       } catch (err: unknown) {
         setError((prev) => ({
@@ -67,31 +116,9 @@ export default function UserProfile() {
       }
     };
 
-    const fetchUserPosts = async () => {
-      try {
-        const postsData = await userService.getUserPosts(userId);
-        setPosts(postsData);
-        setLoading((prev) => ({ ...prev, posts: false }));
-      } catch (err) {
-        setError((prev) => ({ ...prev, posts: "Failed to load posts" }));
-        setLoading((prev) => ({ ...prev, posts: false }));
-      }
-    };
-
-    const fetchUserPhotos = async () => {
-      try {
-        const photosData = await userService.getUserPhotos(userId);
-        setPhotos(photosData);
-        setLoading((prev) => ({ ...prev, photos: false }));
-      } catch (err) {
-        setError((prev) => ({ ...prev, photos: "Failed to load photos" }));
-        setLoading((prev) => ({ ...prev, photos: false }));
-      }
-    };
-
     const fetchUserReviews = async () => {
       try {
-        const reviewsData = await userService.getUserReviews(userId);
+        const reviewsData = await userService.getUserReviews(username);
         setReviews(reviewsData);
         setLoading((prev) => ({ ...prev, reviews: false }));
       } catch (err) {
@@ -102,7 +129,7 @@ export default function UserProfile() {
 
     const fetchUserGuides = async () => {
       try {
-        const guidesData = await userService.getUserGuides(userId);
+        const guidesData = await userService.getUserGuides(username);
         setGuides(guidesData);
         setLoading((prev) => ({ ...prev, guides: false }));
       } catch (err) {
@@ -113,7 +140,7 @@ export default function UserProfile() {
 
     const fetchUserActivities = async () => {
       try {
-        const activitiesData = await userService.getUserActivities(userId);
+        const activitiesData = await userService.getUserActivities(username);
         setActivities(activitiesData);
         setLoading((prev) => ({ ...prev, activities: false }));
       } catch (err) {
@@ -127,7 +154,9 @@ export default function UserProfile() {
 
     const fetchUserAchievements = async () => {
       try {
-        const achievementsData = await userService.getUserAchievements(userId);
+        const achievementsData = await userService.getUserAchievements(
+          username
+        );
         setAchievements(achievementsData);
         setLoading((prev) => ({ ...prev, achievements: false }));
       } catch (err) {
@@ -139,24 +168,13 @@ export default function UserProfile() {
       }
     };
 
-    const fetchConnectionStatus = async () => {
-      try {
-        const { status } = await userService.checkConnectionStatus(userId);
-        setConnectionStatus(status);
-      } catch (err) {
-        console.error("Failed to check connection status:", err);
-      }
-    };
-
     fetchUserProfile();
-    fetchUserPosts();
-    fetchUserPhotos();
+
     fetchUserReviews();
     fetchUserGuides();
     fetchUserActivities();
     fetchUserAchievements();
-    fetchConnectionStatus();
-  }, [userId]);
+  }, [currentUser, navigate, username]);
 
   const handleConnect = () => {
     setShowConnectConfirmation(true);
@@ -172,7 +190,7 @@ export default function UserProfile() {
 
   const handleConfirmConnect = async () => {
     try {
-      await userService.connectWithUser(userId);
+      await userService.connectWithUser(username);
       setConnectionStatus("requested");
       setShowConnectConfirmation(false);
     } catch (err) {
@@ -182,7 +200,7 @@ export default function UserProfile() {
 
   const handleConfirmDisconnect = async () => {
     try {
-      await userService.disconnectFromUser(userId);
+      await userService.disconnectFromUser(username);
       setConnectionStatus("none");
       setShowDisconnectConfirmation(false);
     } catch (err) {
@@ -219,7 +237,7 @@ export default function UserProfile() {
     );
   }
 
-  if (!user) return null;
+  if (!user) return <div>no user</div>;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -232,30 +250,15 @@ export default function UserProfile() {
           onMessage={handleMessage}
         />
         <UserProfileInfo user={user} />
-        <UserNav userId={userId} />
+        <UserNav username={username} />
 
         <div className="grid grid-cols-12 gap-8 p-8">
           <div className="col-span-8">
             <Routes>
-              <Route
-                path="/"
-                element={
-                  <UserPosts
-                    posts={posts}
-                    isLoading={loading.posts}
-                    error={error.posts}
-                  />
-                }
-              />
+              <Route path="/" element={<UserPosts username={username} />} />
               <Route
                 path="/photos"
-                element={
-                  <UserPhotos
-                    photos={photos}
-                    isLoading={loading.photos}
-                    error={error.photos}
-                  />
-                }
+                element={<UserPhotos username={username} />}
               />
               <Route
                 path="/reviews"
@@ -277,16 +280,7 @@ export default function UserProfile() {
                   />
                 }
               />
-              <Route
-                path="/about"
-                element={
-                  <UserAbout
-                    user={user}
-                    isLoading={loading.profile}
-                    error={error.profile}
-                  />
-                }
-              />
+              <Route path="/about" element={<ProfileAbout user={user} />} />
             </Routes>
           </div>
 

@@ -34,7 +34,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {authenticated && <Header image_url={user?.image_url} />}
+      {authenticated && user && <Header image_url={user?.image_url} />}
       <main>
         <Routes location={state?.backgroundLocation || location}>
           {/* Public routes */}
@@ -61,7 +61,7 @@ function App() {
             element={authenticated ? <Profile /> : <Navigate to="/" replace />}
           />
           <Route
-            path="/user/:userId/*"
+            path="/user/:username/*"
             element={
               authenticated ? <UserProfile /> : <Navigate to="/" replace />
             }

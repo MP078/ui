@@ -1,72 +1,68 @@
 export interface UserProfile {
-  id: string;
-  name: string;
-  username?: string;
-  image: string;
-  coverImage: string;
-  location: string;
-  bio: string;
-  verified: boolean;
-  isOnline?: boolean;
-  lastActive?: string;
-  email?: string;
-  phone?: string;
-  website?: string;
-  languages?: string[];
-  interests?: string[];
-  certifications?: string[];
-  stats: {
-    trips: number;
-    guides: number;
-    travelDays: number;
-    places: number;
-    connections: number;
-  };
+    id?: string;
+    name?: string;
+    username?: string;
+    email?: string;
+    image_url: string;
+    verified: boolean | false;
+    total_trips: number | 0;
+    travel_days: number | 0;
+    connections: number | 0;
+    member_since: string | "";
+    interests: string[] | [];
+    languages: string[] | [];
+    website: string | "";
+    certifications: string[] | [];
+    bio: string | "";
+    about: string | "";
+    location: string | "";
+    phone: string | "";
+    friendship_status: string
 }
 
 export interface UserPost {
-  id: string;
-  user: {
-    name: string;
-    image: string;
-    location: string;
-    verified?: boolean;
-  };
-  content: {
-    text: string;
-    images?: string[];
-    timestamp: string;
-  };
-  engagement: {
-    likes: number;
-    comments: number;
-    shares: number;
-  };
+    id: string;
+    user: {
+        name: string;
+        image: string;
+        location: string;
+        verified?: boolean;
+    };
+    content: {
+        text: string;
+        images?: string[];
+        timestamp: string;
+    };
+    engagement: {
+        likes: number;
+        comments: number;
+        shares: number;
+    };
 }
 
 export interface UserPhoto {
-  id: number;
-  url: string;
-  location: string;
-  likes: number;
+    id: number;
+    url: string;
+    location: string;
+    likes: number;
 }
 
 export interface UserReview {
-  id: number;
-  destination: string;
-  rating: number;
-  comment: string;
-  date: string;
-  image: string;
+    id: number;
+    destination: string;
+    rating: number;
+    comment: string;
+    date: string;
+    image: string;
 }
 
 export interface UserGuide {
-  id: number;
-  title: string;
-  description: string;
-  location: string;
-  duration: string;
-  groupSize: string;
-  image: string;
-  downloads: number;
+    id: number;
+    title: string;
+    description: string;
+    location: string;
+    duration: string;
+    groupSize: string;
+    image: string;
+    downloads: number;
 }

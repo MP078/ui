@@ -1,56 +1,109 @@
-import React from 'react';
-import { UserPhoto } from '../../types/user';
+import { useEffect, useState } from "react";
+import { api } from "../../lib/api";
 
-interface UserPhotosProps {
-  photos: UserPhoto[];
-  isLoading?: boolean;
-  error?: string;
-}
+export default function UserPhotos({ username }: { username: string }) {
+  const [photos, setPhotos] = useState<Array<string>>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
-export function UserPhotos({ photos, isLoading, error }: UserPhotosProps) {
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-3 gap-4">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
-        ))}
-      </div>
-    );
-  }
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      try {
+        const res = await api.get(`/users/photos`, {
+          params: {
+            username: username,
+          },
+        });
+        const data = res.data.data;
+        const transformed = data.map((photo: unknown) => photo as string);
+        setPhotos(transformed);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch photos:", err);
+        setLoading(false);
+      }
+    };
+    fetchPhotos();
+  }, [username]);
 
-  if (error) {
-    return (
-      <div className="bg-red-50 p-4 rounded-lg text-red-600">
-        <p>Error loading photos: {error}</p>
-      </div>
-    );
-  }
+  // Handle Escape key and body scroll
+  useEffect(() => {
+    if (!modalOpen) return;
 
-  if (photos.length === 0) {
-    return (
-      <div className="bg-white rounded-lg p-8 text-center">
-        <p className="text-gray-500">No photos to display</p>
-      </div>
-    );
-  }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeModal();
+      }
+    };
+
+    document.body.classList.add("overflow-hidden");
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [modalOpen]);
+
+  const openModal = (photo: string) => {
+    setSelectedPhoto(photo);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setSelectedPhoto(null);
+  };
 
   return (
-    <div className="grid grid-cols-3 gap-4">
-      {photos.map((photo) => (
-        <div key={photo.id} className="relative group">
-          <img
-            src={photo.url}
-            alt={photo.location}
-            className="w-full h-64 object-cover rounded-lg"
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
-            <div className="text-white text-center">
-              <p className="font-medium">{photo.location}</p>
-              <p className="text-sm">{photo.likes} likes</p>
+    <>
+      <div className="grid grid-cols-3 gap-4">
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          photos.map((photo) => (
+            <div
+              key={photo}
+              className="relative group cursor-pointer"
+              onClick={() => openModal(photo)}
+            >
+              <img
+                src={photo}
+                alt={photo}
+                className="w-full h-64 object-cover rounded-lg"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                <div className="text-white text-center"></div>
+              </div>
             </div>
+          ))
+        )}
+      </div>
+      {modalOpen && selectedPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
+          onClick={closeModal}
+        >
+          <div
+            className="relative w-full h-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-6 right-8 bg-orange-400 bg-opacity-90 hover:bg-orange-500 rounded-full w-12 h-12 flex items-center justify-center shadow-lg text-white text-3xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              onClick={closeModal}
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <img
+              src={selectedPhoto}
+              alt="Selected"
+              className="max-w-[90vw] max-h-[90vh] w-auto h-auto rounded-lg object-contain shadow-2xl"
+            />
           </div>
         </div>
-      ))}
-    </div>
+      )}
+    </>
   );
 }

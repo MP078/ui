@@ -1,41 +1,43 @@
-import React, { useState } from 'react';
-import { Button } from './button';
-import { ConfirmationDialog } from './confirmation-dialog';
+import React, { useState } from "react";
+import { Button } from "./button";
+import { ConfirmationDialog } from "./confirmation-dialog";
 
 export interface ConnectButtonProps {
-  userId: string;
-  userName: string;
-  status: 'none' | 'requested' | 'connected';
-  variant?: 'default' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
+  username: string;
+  name: string;
+  status: "none" | "requested" | "connected";
+  variant?: "default" | "outline";
+  size?: "sm" | "md" | "lg";
   className?: string;
-  onConnect: (userId: string) => void;
-  onDisconnect: (userId: string) => void;
+  onConnect: (username: string) => void;
+  onDisconnect: (username: string) => void;
 }
 
 export function ConnectButton({
-  userId,
-  userName,
+  username,
+  name,
   status,
-  variant = 'default',
-  size = 'md',
+  variant = "default",
+  size = "md",
   className,
   onConnect,
-  onDisconnect
+  onDisconnect,
 }: ConnectButtonProps) {
   const [showConnectConfirmation, setShowConnectConfirmation] = useState(false);
-  const [showDisconnectConfirmation, setShowDisconnectConfirmation] = useState(false);
-  const [showUnrequestConfirmation, setShowUnrequestConfirmation] = useState(false);
+  const [showDisconnectConfirmation, setShowDisconnectConfirmation] =
+    useState(false);
+  const [showUnrequestConfirmation, setShowUnrequestConfirmation] =
+    useState(false);
 
   const handleClick = () => {
     switch (status) {
-      case 'connected':
+      case "connected":
         setShowDisconnectConfirmation(true);
         break;
-      case 'requested':
+      case "requested":
         setShowUnrequestConfirmation(true);
         break;
-      case 'none':
+      case "none":
         setShowConnectConfirmation(true);
         break;
     }
@@ -43,27 +45,27 @@ export function ConnectButton({
 
   const getButtonText = () => {
     switch (status) {
-      case 'connected':
-        return 'Connected';
-      case 'requested':
-        return 'Requested';
+      case "connected":
+        return "Connected";
+      case "requested":
+        return "Requested";
       default:
-        return 'Connect';
+        return "Connect";
     }
   };
 
   const getButtonStyle = () => {
-    if (status === 'none') {
+    if (status === "none") {
       return variant;
     }
-    return 'outline';
+    return "outline";
   };
 
   const getButtonHoverClass = () => {
-    if (status === 'requested') {
-      return 'hover:bg-red-50 hover:text-red-600 hover:border-red-200';
+    if (status === "requested") {
+      return "hover:bg-red-50 hover:text-red-600 hover:border-red-200";
     }
-    return '';
+    return "";
   };
 
   return (
@@ -81,11 +83,11 @@ export function ConnectButton({
         isOpen={showConnectConfirmation}
         onClose={() => setShowConnectConfirmation(false)}
         onConfirm={() => {
-          onConnect(userId);
+          onConnect(username);
           setShowConnectConfirmation(false);
         }}
         title="Connect with Traveler"
-        message={`Would you like to connect with ${userName}? They will be notified of your request.`}
+        message={`Would you like to connect with ${name}? They will be notified of your request.`}
         confirmText="Send Request"
         type="info"
       />
@@ -94,11 +96,11 @@ export function ConnectButton({
         isOpen={showUnrequestConfirmation}
         onClose={() => setShowUnrequestConfirmation(false)}
         onConfirm={() => {
-          onDisconnect(userId);
+          onDisconnect(username);
           setShowUnrequestConfirmation(false);
         }}
         title="Cancel Connection Request"
-        message={`Would you like to cancel your connection request to ${userName}?`}
+        message={`Would you like to cancel your connection request to ${name}?`}
         confirmText="Cancel Request"
         type="warning"
       />
@@ -107,11 +109,11 @@ export function ConnectButton({
         isOpen={showDisconnectConfirmation}
         onClose={() => setShowDisconnectConfirmation(false)}
         onConfirm={() => {
-          onDisconnect(userId);
+          onDisconnect(username);
           setShowDisconnectConfirmation(false);
         }}
         title="Disconnect from Traveler"
-        message={`Are you sure you want to disconnect from ${userName}? This action cannot be undone.`}
+        message={`Are you sure you want to disconnect from ${name}? This action cannot be undone.`}
         confirmText="Disconnect"
         type="danger"
       />

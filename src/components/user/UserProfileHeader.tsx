@@ -1,29 +1,29 @@
-import React from 'react';
-import { UserProfile } from '../../types/user';
-import { Button } from '../ui/button';
-import { MessageCircle } from 'lucide-react';
-import { ConnectButton } from '../ui/connect-button';
+import React from "react";
+import { UserProfile } from "../../types/user";
+import { Button } from "../ui/button";
+import { MessageCircle } from "lucide-react";
+import { ConnectButton } from "../ui/connect-button";
 
 interface UserProfileHeaderProps {
   user: UserProfile;
-  connectionStatus: 'none' | 'requested' | 'connected';
+  connectionStatus: "none" | "requested" | "connected";
   onConnect: (userId: string) => void;
   onDisconnect: (userId: string) => void;
   onMessage: () => void;
 }
 
-export function UserProfileHeader({ 
-  user, 
+export function UserProfileHeader({
+  user,
   connectionStatus,
-  onConnect, 
+  onConnect,
   onDisconnect,
-  onMessage 
+  onMessage,
 }: UserProfileHeaderProps) {
   return (
     <div className="relative">
       <div className="h-64 w-full">
         <img
-          src={user.coverImage}
+          src={`https://images.unsplash.com/photo-1464822759023-fed622ff2c3b`}
           alt="Cover"
           className="w-full h-full object-cover"
         />
@@ -31,28 +31,28 @@ export function UserProfileHeader({
       <div className="absolute -bottom-16 left-8">
         <div className="relative">
           <img
-            src={user.image}
+            src={user.image_url}
             alt={user.name}
             className="w-32 h-32 rounded-full border-4 border-white object-cover"
           />
-          {user.isOnline !== undefined && (
-            <div 
+          {/* {user.isOnline !== undefined && (
+            <div
               className={`absolute bottom-3 right-3 w-5 h-5 border-2 border-white rounded-full ${
-                user.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                user.isOnline ? "bg-green-500" : "bg-gray-400"
               }`}
             />
-          )}
+          )} */}
         </div>
       </div>
       <div className="absolute bottom-4 right-4 flex gap-2">
         <ConnectButton
-          userId={user.id}
-          userName={user.name}
+          username={user.username ?? "@anonymous"}
+          name={user.name ?? "N/A"}
           status={connectionStatus}
           onConnect={onConnect}
           onDisconnect={onDisconnect}
         />
-        <Button 
+        <Button
           onClick={onMessage}
           variant="outline"
           className="bg-white text-gray-800 hover:bg-gray-100 transition-colors"
