@@ -3,10 +3,10 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  MoreVertical,
   Share2,
   Heart,
   Send,
+  MapPin,
 } from "lucide-react";
 
 interface Story {
@@ -191,9 +191,26 @@ export function StoryViewerModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-around z-50"
       onClick={handleBackdropClick}
     >
+      {/* Navigation arrows outside the image container */}
+      <button
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/40 hover:bg-black/60 rounded-full p-2 text-white"
+        style={{ left: 0 }}
+        onClick={handlePrevStory}
+        aria-label="Previous story"
+      >
+        <ChevronLeft size={32} />
+      </button>
+      <button
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/40 hover:bg-black/60 rounded-full p-2 text-white"
+        style={{ right: 0 }}
+        onClick={handleNextStory}
+        aria-label="Next story"
+      >
+        <ChevronRight size={32} />
+      </button>
       <div className="relative w-full max-w-[380px] aspect-[9/16] bg-black overflow-hidden rounded-2xl">
         <img
           src={story.image}
@@ -239,18 +256,6 @@ export function StoryViewerModal({
           >
             <X />
           </button>
-          <button
-            className="absolute top-1/2 left-2 -translate-y-1/2 text-white"
-            onClick={handlePrevStory}
-          >
-            <ChevronLeft />
-          </button>
-          <button
-            className="absolute top-1/2 right-2 -translate-y-1/2 text-white"
-            onClick={handleNextStory}
-          >
-            <ChevronRight />
-          </button>
         </div>
         {/* Story content overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-2">
@@ -262,7 +267,7 @@ export function StoryViewerModal({
           {story.location && (
             <div className="text-white text-xs flex items-center gap-1">
               <span>
-                <MoreVertical size={14} />
+                <MapPin />
               </span>
               <span>{story.location}</span>
             </div>
