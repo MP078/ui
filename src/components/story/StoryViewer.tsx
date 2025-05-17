@@ -1,12 +1,18 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   X,
   ChevronLeft,
   ChevronRight,
-  MoreVertical,
   Share2,
   Heart,
   Send,
+  MapPin,
 } from "lucide-react";
 
 interface Story {
@@ -47,6 +53,7 @@ export function StoryViewerModal({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isPaused] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Build flat array and set initial index
   useEffect(() => {
@@ -165,36 +172,120 @@ export function StoryViewerModal({
     }
   }, [isOpen]);
 
+  // Navigation handlers (must be above useEffect for keyboard)
+  const handlePrevStory = useCallback(
+    (e?: React.MouseEvent | React.TouchEvent | KeyboardEvent) => {
+      if (e && "stopPropagation" in e) e.stopPropagation();
+      const prevIdx = getPrevStoryIndexForUser();
+      if (prevIdx !== null && prevIdx >= 0) {
+        setCurrentIndex(prevIdx);
+        setProgress(0);
+      }
+    },
+    [getPrevStoryIndexForUser]
+  );
+  const handleNextStory = useCallback(
+    (e?: React.MouseEvent | React.TouchEvent | KeyboardEvent) => {
+      if (e && "stopPropagation" in e) e.stopPropagation();
+      const nextIdx = getNextStoryIndexForUser();
+      if (nextIdx !== null && nextIdx >= 0) {
+        setCurrentIndex(nextIdx);
+        setProgress(0);
+      } else {
+        onClose();
+      }
+    },
+    [getNextStoryIndexForUser, onClose]
+  );
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        handlePrevStory();
+      } else if (e.key === "ArrowRight") {
+        handleNextStory();
+      } else if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose, handlePrevStory, handleNextStory]);
+
+  // Tap/click navigation on image halves
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const bounds = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - bounds.left;
+    if (x < bounds.width / 2) {
+      handlePrevStory(e);
+    } else {
+      handleNextStory(e);
+    }
+  };
+  // Touch navigation for mobile
+  const handleImageTouch = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const touch = e.touches[0];
+    const bounds = containerRef.current.getBoundingClientRect();
+    const x = touch.clientX - bounds.left;
+    if (x < bounds.width / 2) {
+      handlePrevStory(e);
+    } else {
+      handleNextStory(e);
+    }
+  };
+
   if (!isOpen || allStories.length === 0 || !user || !story) return null;
 
-  const handlePrevStory = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const prevIdx = getPrevStoryIndexForUser();
-    if (prevIdx !== null && prevIdx >= 0) {
-      setCurrentIndex(prevIdx);
-      setProgress(0);
-    }
-  };
-  const handleNextStory = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const nextIdx = getNextStoryIndexForUser();
-    if (nextIdx !== null && nextIdx >= 0) {
-      setCurrentIndex(nextIdx);
-      setProgress(0);
-    } else {
-      onClose();
-    }
-  };
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
   };
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-around z-50"
       onClick={handleBackdropClick}
     >
-      <div className="relative w-full max-w-[380px] aspect-[9/16] bg-black overflow-hidden rounded-2xl">
+      {/* Navigation arrows outside the image container */}
+      <button
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/40 hover:bg-black/60 rounded-full p-2 text-white"
+        style={{ left: 0 }}
+        onClick={handlePrevStory}
+        aria-label="Previous story"
+      >
+        <ChevronLeft size={32} />
+      </button>
+      <button
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/40 hover:bg-black/60 rounded-full p-2 text-white"
+        style={{ right: 0 }}
+        onClick={handleNextStory}
+        aria-label="Next story"
+      >
+        <ChevronRight size={32} />
+      </button>
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-[380px] aspect-[9/16] bg-black overflow-hidden rounded-2xl select-none"
+        onClick={handleImageClick}
+        onTouchStart={handleImageTouch}
+        tabIndex={-1}
+        aria-label="Story viewer"
+        role="region"
+      >
+        {/* Overlay for left/right tap/click navigation (for accessibility, pointer events only) */}
+        <div
+          className="absolute left-0 top-0 w-1/2 h-full z-30"
+          style={{ cursor: "pointer" }}
+          aria-label="Previous story"
+        />
+        <div
+          className="absolute right-0 top-0 w-1/2 h-full z-30"
+          style={{ cursor: "pointer" }}
+          aria-label="Next story"
+        />
         <img
           src={story.image}
           alt={user.name}
@@ -239,18 +330,6 @@ export function StoryViewerModal({
           >
             <X />
           </button>
-          <button
-            className="absolute top-1/2 left-2 -translate-y-1/2 text-white"
-            onClick={handlePrevStory}
-          >
-            <ChevronLeft />
-          </button>
-          <button
-            className="absolute top-1/2 right-2 -translate-y-1/2 text-white"
-            onClick={handleNextStory}
-          >
-            <ChevronRight />
-          </button>
         </div>
         {/* Story content overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-2">
@@ -262,7 +341,7 @@ export function StoryViewerModal({
           {story.location && (
             <div className="text-white text-xs flex items-center gap-1">
               <span>
-                <MoreVertical size={14} />
+                <MapPin />
               </span>
               <span>{story.location}</span>
             </div>

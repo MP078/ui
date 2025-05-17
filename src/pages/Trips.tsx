@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { UserContext } from "../context/UserContext";
+import { getAvatarNumber, UserContext } from "../context/UserContext";
 import { StatCard } from "../components/stats/StatCard";
 import {
   AlertTriangle,
@@ -259,7 +259,10 @@ export default function Trips() {
         >
           <div className="flex items-center gap-3">
             <img
-              src={connection.avatar_url}
+              src={
+                connection.avatar_url ||
+                `/avatars/${getAvatarNumber(connection.id)}.png`
+              }
               alt={connection.name}
               className="w-12 h-12 rounded-full object-cover"
             />
