@@ -61,7 +61,7 @@ function App() {
             element={authenticated ? <Profile /> : <Navigate to="/" replace />}
           />
           <Route
-            path="/user/:username/*"
+            path="/:username/*"
             element={
               authenticated ? <UserProfile /> : <Navigate to="/" replace />
             }

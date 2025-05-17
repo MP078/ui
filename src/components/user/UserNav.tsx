@@ -8,11 +8,11 @@ export function UserNav({ username }: UserNavProps) {
   const location = useLocation();
 
   const navItems = [
-    { path: `/user/${username}`, label: "Posts" },
-    { path: `/user/${username}/photos`, label: "Photos" },
-    { path: `/user/${username}/reviews`, label: "Reviews" },
-    { path: `/user/${username}/guides`, label: "Guides" },
-    { path: `/user/${username}/about`, label: "About" },
+    { path: `/${username}`, label: "Posts" },
+    { path: `/${username}/photos`, label: "Photos" },
+    { path: `/${username}/reviews`, label: "Reviews" },
+    { path: `/${username}/guides`, label: "Guides" },
+    { path: `/${username}/about`, label: "About" },
   ];
 
   return (
