@@ -155,9 +155,6 @@ export default function Header({ image_url }: { image_url: string }) {
                 }}
               >
                 <Users className="w-6 h-6 text-gray-600" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-brand-orange text-white rounded-full text-xs flex items-center justify-center">
-                  3
-                </span>
               </button>
               <FriendRequestDropdown
                 isOpen={showFriendRequests}
