@@ -1,8 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Users, Image as ImageIcon, Clock, DollarSign, Plus, X } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Trip } from '../types/trip';
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  MapPin,
+  Calendar,
+  Users,
+  Image as ImageIcon,
+  DollarSign,
+  Plus,
+  X,
+} from "lucide-react";
+import { Button } from "../components/ui/button";
 
 interface TripFormData {
   title: string;
@@ -12,13 +19,11 @@ interface TripFormData {
   maxParticipants: number;
   description: string;
   activities: string[];
-  difficulty: 'easy' | 'moderate' | 'difficult';
+  difficulty: "easy" | "moderate" | "difficult";
   image: string;
   highlights: string[];
-  cost: {
-    amount: number;
-    currency: string;
-  };
+  cost: string;
+  currency: string;
   summary: {
     totalDays: number;
     totalCost: number;
@@ -28,47 +33,56 @@ interface TripFormData {
 }
 
 const defaultFormData: TripFormData = {
-  title: '',
-  location: '',
-  startDate: '',
-  endDate: '',
+  title: "",
+  location: "",
+  startDate: "",
+  endDate: "",
   maxParticipants: 1,
-  description: '',
+  description: "",
   activities: [],
-  difficulty: 'easy',
-  image: '',
+  difficulty: "easy",
+  image: "",
   highlights: [],
-  cost: {
-    amount: 0,
-    currency: 'USD'
-  },
+  cost: "0",
+  currency: "USD",
   summary: {
     totalDays: 0,
     totalCost: 0,
     highlights: [],
-    photos: []
-  }
+    photos: [],
+  },
 };
 
 const availableActivities = [
-  'Trekking',
-  'Photography',
-  'Cultural Tours',
-  'Adventure Sports',
-  'Wildlife',
-  'Camping',
-  'Local Cuisine',
-  'Meditation'
+  "Trekking",
+  "Photography",
+  "Cultural Tours",
+  "Adventure Sports",
+  "Wildlife",
+  "Camping",
+  "Local Cuisine",
+  "Meditation",
 ];
 
-const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR', 'NPR'];
+const currencies = [
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "AUD",
+  "CAD",
+  "CHF",
+  "CNY",
+  "INR",
+  "NPR",
+];
 
 export default function CreateTrip() {
   const location = useLocation();
   const navigate = useNavigate();
   const destinationDetails = location.state?.destination;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newHighlight, setNewHighlight] = useState('');
+  const [newHighlight, setNewHighlight] = useState("");
 
   const [formData, setFormData] = useState<TripFormData>(() => {
     if (destinationDetails) {
@@ -76,25 +90,25 @@ export default function CreateTrip() {
         ...defaultFormData,
         title: `Trip to ${destinationDetails.name}`,
         location: destinationDetails.location,
-        description: destinationDetails.description || '',
-        difficulty: destinationDetails.difficulty?.toLowerCase() || 'easy',
-        image: destinationDetails.image || '',
+        description: destinationDetails.description || "",
+        difficulty: destinationDetails.difficulty?.toLowerCase() || "easy",
+        image: destinationDetails.image || "",
         activities: destinationDetails.activities || [],
         highlights: destinationDetails.highlights || [],
-      
+
         summary: {
           ...defaultFormData.summary,
-          highlights: destinationDetails.highlights || []
-        }
+          highlights: destinationDetails.highlights || [],
+        },
       };
     }
     return defaultFormData;
   });
 
   useEffect(() => {
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = "auto";
     return () => {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = "auto";
     };
   }, []);
 
@@ -105,115 +119,139 @@ export default function CreateTrip() {
       const end = new Date(formData.endDate);
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      setFormData(prev => ({
+
+      setFormData((prev) => ({
         ...prev,
         summary: {
           ...prev.summary,
           totalDays: diffDays,
-          totalCost: prev.cost.amount // Update total cost to match main cost
-        }
+          totalCost: Number(prev.cost), // Update total cost to match main cost
+        },
       }));
     }
   }, [formData.startDate, formData.endDate]);
 
   // Update summary cost whenever main cost changes
   useEffect(() => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       summary: {
         ...prev.summary,
-        totalCost: prev.cost.amount
-      }
+        totalCost: Number(prev.cost),
+      },
     }));
-  }, [formData.cost.amount]);
+  }, [formData.cost]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // Prepare the trip data
-      const tripData: Partial<Trip> = {
-        tripId: `T${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
-        destination: formData.title,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        status: 'upcoming',
+      // Map the difficulty values to match the Trip interface
+      let tripDifficulty: "easy" | "medium" | "difficult" | undefined;
+      if (formData.difficulty === "moderate") {
+        tripDifficulty = "medium";
+      } else {
+        tripDifficulty = formData.difficulty;
+      }
+
+      // Format cost to include currency
+      const formattedCost = `${formData.currency} ${formData.cost}`;
+
+      // Create a flattened JSON object with all trip data
+      const tripDataFlat = {
+        trip_id: `T${new Date().getFullYear()}-${Math.floor(
+          Math.random() * 1000
+        )}`,
+        title: formData.title,
+        location: formData.location,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
         description: formData.description,
-        reviewStatus: 'not_required',
-        imageUrl: formData.image,
-        totalTravelers: 0, // Will be updated as people join
+        max_participants: formData.maxParticipants,
+        difficulty: tripDifficulty,
+        cost: formattedCost,
+        activities: formData.activities,
         highlights: formData.highlights,
-        cost: formData.cost,
-        difficulty: formData.difficulty,
-        summary: formData.summary,
-        createdBy: 'currentUser', // This would come from auth context
-        travelBuddies: [],
-        organizers: []
+        image_url: formData.image,
+        total_days: formData.summary.totalDays,
+        total_cost: formData.summary.totalCost,
       };
 
-      console.log('Creating trip:', tripData);
+      // Output JSON data
+      console.log(JSON.stringify(tripDataFlat, null, 2));
+
+      // Prepare the trip data
+      const tripData = {
+        ...formData,
+        difficulty: tripDifficulty,
+        cost: formattedCost,
+      };
+
+      // Original logging
+      console.log("Creating trip object:", tripData);
       // Here you would make an API call to create the trip
-      
-      navigate('/trips');
+
+      //   navigate("/trips");
     } catch (error) {
-      console.error('Error creating trip:', error);
+      console.error("Error creating trip:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
-    if (name === 'cost.amount') {
-      setFormData(prev => ({
+    if (name === "cost") {
+      setFormData((prev) => ({
         ...prev,
-        cost: { ...prev.cost, amount: Number(value) }
+        cost: value,
       }));
-    } else if (name === 'cost.currency') {
-      setFormData(prev => ({
+    } else if (name === "currency") {
+      setFormData((prev) => ({
         ...prev,
-        cost: { ...prev.cost, currency: value }
+        currency: value,
       }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
   const toggleActivity = (activity: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       activities: prev.activities.includes(activity)
-        ? prev.activities.filter(a => a !== activity)
-        : [...prev.activities, activity]
+        ? prev.activities.filter((a) => a !== activity)
+        : [...prev.activities, activity],
     }));
   };
 
   const addHighlight = () => {
     if (newHighlight.trim()) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         highlights: [...prev.highlights, newHighlight.trim()],
         summary: {
           ...prev.summary,
-          highlights: [...prev.summary.highlights, newHighlight.trim()]
-        }
+          highlights: [...prev.summary.highlights, newHighlight.trim()],
+        },
       }));
-      setNewHighlight('');
+      setNewHighlight("");
     }
   };
 
   const removeHighlight = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       highlights: prev.highlights.filter((_, i) => i !== index),
       summary: {
         ...prev.summary,
-        highlights: prev.summary.highlights.filter((_, i) => i !== index)
-      }
+        highlights: prev.summary.highlights.filter((_, i) => i !== index),
+      },
     }));
   };
 
@@ -221,13 +259,18 @@ export default function CreateTrip() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h1 className="text-2xl font-semibold mb-6">Create New Trip</h1>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-900">Basic Information</h2>
-            
+            <h2 className="text-lg font-medium text-gray-900">
+              Basic Information
+            </h2>
+
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="title"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Trip Title
               </label>
               <input
@@ -243,7 +286,10 @@ export default function CreateTrip() {
             </div>
 
             <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="location"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Location
               </label>
               <div className="relative">
@@ -263,7 +309,10 @@ export default function CreateTrip() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="startDate"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Start Date
                 </label>
                 <div className="relative">
@@ -279,9 +328,12 @@ export default function CreateTrip() {
                   />
                 </div>
               </div>
-              
+
               <div>
-                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="endDate"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   End Date
                 </label>
                 <div className="relative">
@@ -300,7 +352,10 @@ export default function CreateTrip() {
             </div>
 
             <div>
-              <label htmlFor="maxParticipants" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="maxParticipants"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Maximum Participants
               </label>
               <div className="relative">
@@ -322,9 +377,12 @@ export default function CreateTrip() {
 
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-gray-900">Trip Details</h2>
-            
+
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Description
               </label>
               <textarea
@@ -344,15 +402,15 @@ export default function CreateTrip() {
                 Activities
               </label>
               <div className="flex flex-wrap gap-2">
-                {availableActivities.map(activity => (
+                {availableActivities.map((activity) => (
                   <button
                     key={activity}
                     type="button"
                     onClick={() => toggleActivity(activity)}
                     className={`px-4 py-2 rounded-full text-sm ${
                       formData.activities.includes(activity)
-                        ? 'bg-brand-orange text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? "bg-brand-orange text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
                     {activity}
@@ -362,7 +420,10 @@ export default function CreateTrip() {
             </div>
 
             <div>
-              <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="difficulty"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Difficulty Level
               </label>
               <select
@@ -380,7 +441,10 @@ export default function CreateTrip() {
             </div>
 
             <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="image"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Cover Image URL
               </label>
               <div className="relative">
@@ -405,7 +469,9 @@ export default function CreateTrip() {
               <div className="space-y-2">
                 {formData.highlights.map((highlight, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    <span className="flex-1 bg-gray-50 px-4 py-2 rounded-lg">{highlight}</span>
+                    <span className="flex-1 bg-gray-50 px-4 py-2 rounded-lg">
+                      {highlight}
+                    </span>
                     <button
                       type="button"
                       onClick={() => removeHighlight(index)}
@@ -436,16 +502,19 @@ export default function CreateTrip() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="cost.amount" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="cost"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Cost Amount
                 </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-2.5 text-gray-400 w-5 h-5" />
                   <input
                     type="number"
-                    id="cost.amount"
-                    name="cost.amount"
-                    value={formData.cost.amount}
+                    id="cost"
+                    name="cost"
+                    value={formData.cost}
                     onChange={handleChange}
                     min="0"
                     step="0.01"
@@ -456,19 +525,24 @@ export default function CreateTrip() {
               </div>
 
               <div>
-                <label htmlFor="cost.currency" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="currency"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Currency
                 </label>
                 <select
-                  id="cost.currency"
-                  name="cost.currency"
-                  value={formData.cost.currency}
+                  id="currency"
+                  name="currency"
+                  value={formData.currency}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
                   required
                 >
-                  {currencies.map(currency => (
-                    <option key={currency} value={currency}>{currency}</option>
+                  {currencies.map((currency) => (
+                    <option key={currency} value={currency}>
+                      {currency}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -476,18 +550,15 @@ export default function CreateTrip() {
           </div>
 
           <div className="flex justify-end space-x-4 pt-6">
-            <Button 
-              variant="outline" 
-              type="button" 
+            <Button
+              variant="outline"
+              type="button"
               onClick={() => navigate(-1)}
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Creating...' : 'Create Trip'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Trip"}
             </Button>
           </div>
         </form>

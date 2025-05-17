@@ -90,7 +90,7 @@ export function TripSummaryModal({
                 <p className="text-xs sm:text-sm text-gray-500">Total Cost</p>
                 <p className="font-medium text-sm sm:text-base">
                   {total_cost && total_cost > 0
-                    ? `$${total_cost}`
+                    ? `${total_cost}`
                     : "Cost not specified"}
                 </p>
               </div>

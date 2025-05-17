@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from "react";
-import {
-  X,
-  Calendar,
-  Users,
-  MapPin,
-  DollarSign,
-  UserCheck,
-} from "lucide-react";
+import { X, Calendar, Users, MapPin, DollarSign } from "lucide-react";
 import { Trip } from "../../types/trip";
 import { formatDate } from "../../utils/date";
 import { Button } from "../ui/button";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
-import { TripOrganizers } from "./TripOrganizers";
+// Import TripOrganizers if needed in future
+// import { TripOrganizers } from "./TripOrganizers";
 
 interface TripDetailModalProps {
   isOpen: boolean;
@@ -61,22 +55,6 @@ export function TripDetailModal({
     onClose();
   };
 
-  const handleRequestOrganizer = () => {
-    console.log("Requesting to be organizer for trip:", trip.id);
-  };
-
-  const handleAcceptRequest = (username: string) => {
-    console.log("Accepting organizer request from:", username);
-  };
-
-  const handleRejectRequest = (username: string) => {
-    console.log("Rejecting organizer request from:", username);
-  };
-
-  const handleRemoveOrganizer = (username: string) => {
-    console.log("Removing organizer:", username);
-  };
-
   const currentUser = "current_username"; // Replace with actual current user
   const isOrganizer = trip.organizers?.some(
     (org) => org.username === currentUser
@@ -93,7 +71,6 @@ export function TripDetailModal({
   const tripDescription =
     trip.description || "No description provided for this trip.";
   const tripHighlights = trip.highlights || [];
-  const tripOrganizers = trip.organizers || [];
   const tripCost = trip.cost || "Not specified";
   const tripMembersCount = trip.members_count || 0;
 
