@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import {
   X,
   Camera,
@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
+import { api } from "../../lib/api"; // Make sure this import exists
+import { UserContext } from "../../context/UserContext";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -55,26 +57,42 @@ export function EditProfileModal({
   onClose,
   onSave,
 }: EditProfileModalProps) {
+  const { user, setUser } = useContext(UserContext);
   const [showUnsavedChanges, setShowUnsavedChanges] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>({
-    name: "Anne Frank",
-    email: "anne.frank@example.com",
-    phone: "+33 123 456 789",
-    location: "Paris, France",
-    website: "www.annefrank.travel",
-    bio: "HI, I'm Anne! I'm a passionate traveler and photographer based in Paris, France. I've been exploring the Himalayas for the past 5 years and love sharing my experiences with fellow adventurers.",
-    languages: ["French", "English", "Nepali"],
-    interests: [
-      "Mountain Trekking",
-      "Travel Photography",
-      "Cultural Exploration",
-    ],
-    certifications: [
-      "Certified Mountain Guide - IFMGA",
-      "Wilderness First Responder",
-      "Advanced Photography - National Geographic",
-    ],
+    name: "",
+    email: "",
+    phone: "",
+    location: "",
+    website: "",
+    bio: "",
+    languages: [],
+    interests: [],
+    certifications: [],
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync form with user context
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        location: user.location || "",
+        website: user.website || "",
+        bio: user.bio || "",
+        languages: user.languages || [],
+        interests: user.interests || [],
+        certifications: user.certifications || [],
+      });
+      setAvatarPreview(user.image_url || null);
+      setAvatarFile(null);
+    }
+  }, [user, isOpen]);
 
   const handleClose = () => {
     setShowUnsavedChanges(true);
@@ -85,9 +103,41 @@ export function EditProfileModal({
     onClose();
   };
 
-  const handleSave = () => {
-    onSave(formData);
-    onClose();
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const formDataToSend = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach((v) => formDataToSend.append(`${key}[]`, v));
+        } else {
+          formDataToSend.append(key, value as string);
+        }
+      });
+      if (avatarFile) {
+        formDataToSend.append("profile_image", avatarFile);
+      }
+
+      const res = await api.patch("/users", formDataToSend, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const backendUser = res.data.data || res.data;
+      // Defensive: always set image_url and verified
+      setUser && setUser({
+        ...user,
+        ...formData,
+        image_url:
+          backendUser.profile_image || backendUser.image_url || (user?.image_url ?? ""),
+        verified: backendUser.verified ?? (user?.verified ?? false),
+      });
+      onSave(formData);
+      onClose();
+    } catch (error) {
+      alert("Failed to update profile. Please try again.");
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -111,13 +161,45 @@ export function EditProfileModal({
             <div className="flex items-center gap-6 mb-8">
               <div className="relative">
                 <img
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330"
+                  src={avatarPreview || "/avatars/1.png"}
                   alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover"
+                  className="w-24 h-24 rounded-full object-cover border"
                 />
-                <button className="absolute bottom-0 right-0 p-2 bg-brand-orange text-white rounded-full">
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setAvatarFile(file);
+                      setAvatarPreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="absolute bottom-0 right-0 p-2 bg-brand-orange text-white rounded-full"
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="Change profile photo"
+                >
                   <Camera className="w-4 h-4" />
                 </button>
+                {avatarFile && (
+                  <button
+                    type="button"
+                    className="absolute -top-2 -right-2 bg-white border border-gray-300 text-gray-500 rounded-full p-1 shadow"
+                    onClick={() => {
+                      setAvatarFile(null);
+                      setAvatarPreview(user?.image_url || null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    aria-label="Remove selected photo"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
               <div>
                 <h3 className="font-medium">Profile Photo</h3>
@@ -339,7 +421,9 @@ export function EditProfileModal({
             <Button variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
         </div>
       </div>
