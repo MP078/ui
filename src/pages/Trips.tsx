@@ -26,67 +26,88 @@ const formatTripId = (tripId: string) => {
 };
 
 // Helper to normalize trip data
-const normalizeTrip = (trip: any) => ({
-  ...trip,
-  // Always use string for trip_id, use id as is
-  trip_id: trip.id || "",
-  displayId: formatTripId(trip.id || ""),
+const normalizeTrip = (trip: any) => {
+  // Ensure dates are consistent first
+  const startDate = trip.start_date || trip.startDate;
+  const endDate = trip.end_date || trip.endDate;
 
-  // Use title as the primary field
-  title: trip.title || "Untitled Trip",
+  // Determine status based on dates
+  const currentDate = new Date();
+  let derivedStatus = "upcoming";
 
-  // Use location only if needed
-  destination: trip.title || "Unknown Location",
+  if (startDate && endDate) {
+    const tripStartDate = new Date(startDate);
+    const tripEndDate = new Date(endDate);
 
-  // Ensure start/end dates use consistent naming
-  start_date: trip.start_date || trip.startDate,
-  end_date: trip.end_date || trip.endDate,
+    if (tripEndDate < currentDate) {
+      derivedStatus = "completed";
+    } else if (tripStartDate <= currentDate && tripEndDate >= currentDate) {
+      derivedStatus = "ongoing";
+    } else {
+      derivedStatus = "upcoming";
+    }
+  }
 
-  // Set status fields consistently
-  status: trip.status || "upcoming",
-  tripStatus: trip.tripStatus || trip.participation_status || "open",
+  return {
+    ...trip,
+    // Always use string for trip_id, use id as is
+    trip_id: trip.id || "",
+    displayId: formatTripId(trip.id || ""),
 
-  // Calculate days if not provided
-  days:
-    trip.days ||
-    ((trip.start_date || trip.startDate) && (trip.end_date || trip.endDate)
-      ? Math.max(
-          1,
-          Math.ceil(
-            (new Date(trip.end_date || trip.endDate).getTime() -
-              new Date(trip.start_date || trip.startDate).getTime()) /
-              (1000 * 60 * 60 * 24)
-          ) + 1
-        )
-      : undefined),
+    // Use title as the primary field
+    title: trip.title || "Untitled Trip",
 
-  // Set consistent member count
-  totalTravelers: trip.totalTravelers || trip.members_count || 1,
+    // Use location only if needed
+    destination: trip.title || "Unknown Location",
 
-  // Ensure difficulty is consistent
-  difficulty: trip.difficulty || "moderate",
+    // Ensure start/end dates use consistent naming
+    start_date: startDate,
+    end_date: endDate,
 
-  // Default image if not provided
-  imageUrl: trip.cover_image_url || "/placeholder/trip.png",
+    // Set status fields consistently - now derived from dates
+    status: derivedStatus,
+    tripStatus: trip.participation_status || "open",
 
-  // Initialize summary if not provided
-  summary: trip.summary || {
-    totalDays:
+    // Calculate days if not provided
+    days:
       trip.days ||
-      ((trip.start_date || trip.start_date) && (trip.end_date || trip.end_date)
+      (startDate && endDate
         ? Math.max(
             1,
             Math.ceil(
-              (new Date(trip.end_date || trip.end_date).getTime() -
-                new Date(trip.start_date || trip.start_date).getTime()) /
+              (new Date(endDate).getTime() - new Date(startDate).getTime()) /
                 (1000 * 60 * 60 * 24)
             ) + 1
           )
         : undefined),
-    highlights: trip.highlights || [],
-    totalCost: (trip.cost && trip.cost.amount) || undefined,
-  },
-});
+
+    // Set consistent member count
+    totalTravelers: trip.totalTravelers || trip.members_count || 1,
+
+    // Ensure difficulty is consistent
+    difficulty: trip.difficulty || "moderate",
+
+    // Default image if not provided
+    imageUrl: trip.cover_image_url || "/placeholder/trip.png",
+
+    // Initialize summary if not provided
+    summary: trip.summary || {
+      totalDays:
+        trip.days ||
+        (startDate && endDate
+          ? Math.max(
+              1,
+              Math.ceil(
+                (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              ) + 1
+            )
+          : undefined),
+      highlights: trip.highlights || [],
+      totalCost: (trip.cost && trip.cost.amount) || undefined,
+    },
+  };
+};
 
 export default function Trips() {
   const { user } = useContext(UserContext);
@@ -95,6 +116,7 @@ export default function Trips() {
   const [loading, setLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  // Removed pastTrips state
 
   // New state variables
   const [selectedTrip, setSelectedTrip] = useState<any | null>(null);

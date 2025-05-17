@@ -90,10 +90,10 @@ export function TripHistoryCard({
               {new Date(trip.end_date).toLocaleDateString()}
             </span>
           </div>
-          {trip.total_travelers && (
+          {trip.total_traveler && (
             <div className="flex items-center gap-2 text-gray-600">
               <Users className="w-4 h-4" />
-              <span className="text-sm">{trip.total_travelers} Travelers</span>
+              <span className="text-sm">{trip.total_traveler} Travelers</span>
             </div>
           )}
         </div>
