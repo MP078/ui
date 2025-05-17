@@ -1,12 +1,11 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from "react-router-dom";
 
 const navItems = [
-  { path: '/user', label: 'Posts' },
-  { path: '/user/photos', label: 'Photos' },
-  { path: '/user/reviews', label: 'Reviews' },
-  { path: '/user/guides', label: 'Guides' },
-  { path: '/user/about', label: 'About' },
+  { path: "/user", label: "Posts" },
+  { path: "/user/photos", label: "Photos" },
+  { path: "/user/reviews", label: "Reviews" },
+  { path: "/user/guides", label: "Guides" },
+  { path: "/user/about", label: "About" },
 ];
 
 export default function ProfileNav() {
@@ -22,8 +21,8 @@ export default function ProfileNav() {
               to={item.path}
               className={`py-4 px-2 font-medium relative ${
                 location.pathname === item.path
-                  ? 'text-brand-orange'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? "text-brand-orange"
+                  : "text-gray-600 hover:text-gray-900"
               }`}
             >
               {item.label}
