@@ -1,7 +1,15 @@
-import React, { useState } from 'react';
-import { X, Camera, MapPin, Globe2, Mail, Phone, AlertTriangle } from 'lucide-react';
-import { Button } from '../ui/button';
-import { ConfirmationDialog } from '../ui/confirmation-dialog';
+import React, { useState } from "react";
+import {
+  X,
+  Camera,
+  MapPin,
+  Globe2,
+  Mail,
+  Phone,
+  AlertTriangle,
+} from "lucide-react";
+import { Button } from "../ui/button";
+import { ConfirmationDialog } from "../ui/confirmation-dialog";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -21,25 +29,51 @@ interface ProfileFormData {
   certifications: string[];
 }
 
-const availableLanguages = ['English', 'French', 'Spanish', 'German', 'Chinese', 'Japanese', 'Korean', 'Nepali'];
-const availableInterests = ['Hiking', 'Photography', 'Culture', 'Adventure', 'Nature', 'Food', 'History', 'Art'];
+const availableLanguages = [
+  "English",
+  "French",
+  "Spanish",
+  "German",
+  "Chinese",
+  "Japanese",
+  "Korean",
+  "Nepali",
+];
+const availableInterests = [
+  "Hiking",
+  "Photography",
+  "Culture",
+  "Adventure",
+  "Nature",
+  "Food",
+  "History",
+  "Art",
+];
 
-export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalProps) {
+export function EditProfileModal({
+  isOpen,
+  onClose,
+  onSave,
+}: EditProfileModalProps) {
   const [showUnsavedChanges, setShowUnsavedChanges] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>({
-    name: 'Anne Frank',
-    email: 'anne.frank@example.com',
-    phone: '+33 123 456 789',
-    location: 'Paris, France',
-    website: 'www.annefrank.travel',
+    name: "Anne Frank",
+    email: "anne.frank@example.com",
+    phone: "+33 123 456 789",
+    location: "Paris, France",
+    website: "www.annefrank.travel",
     bio: "HI, I'm Anne! I'm a passionate traveler and photographer based in Paris, France. I've been exploring the Himalayas for the past 5 years and love sharing my experiences with fellow adventurers.",
-    languages: ['French', 'English', 'Nepali'],
-    interests: ['Mountain Trekking', 'Travel Photography', 'Cultural Exploration'],
+    languages: ["French", "English", "Nepali"],
+    interests: [
+      "Mountain Trekking",
+      "Travel Photography",
+      "Cultural Exploration",
+    ],
     certifications: [
-      'Certified Mountain Guide - IFMGA',
-      'Wilderness First Responder',
-      'Advanced Photography - National Geographic'
-    ]
+      "Certified Mountain Guide - IFMGA",
+      "Wilderness First Responder",
+      "Advanced Photography - National Geographic",
+    ],
   });
 
   const handleClose = () => {
@@ -102,7 +136,9 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
                 />
               </div>
@@ -113,7 +149,9 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
                 </label>
                 <textarea
                   value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bio: e.target.value })
+                  }
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
                 />
@@ -129,7 +167,9 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
                     />
                   </div>
@@ -144,7 +184,9 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
                     <input
                       type="tel"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
                     />
                   </div>
@@ -159,7 +201,9 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
                     <input
                       type="text"
                       value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, location: e.target.value })
+                      }
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
                     />
                   </div>
@@ -174,7 +218,9 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
                     <input
                       type="url"
                       value={formData.website}
-                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, website: e.target.value })
+                      }
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
                     />
                   </div>
@@ -190,15 +236,17 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
                     <button
                       key={language}
                       onClick={() => {
-                        const newLanguages = formData.languages.includes(language)
+                        const newLanguages = formData.languages.includes(
+                          language
+                        )
                           ? formData.languages.filter((l) => l !== language)
                           : [...formData.languages, language];
                         setFormData({ ...formData, languages: newLanguages });
                       }}
                       className={`px-3 py-1 rounded-full text-sm ${
                         formData.languages.includes(language)
-                          ? 'bg-brand-orange text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? "bg-brand-orange text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                     >
                       {language}
@@ -216,15 +264,17 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
                     <button
                       key={interest}
                       onClick={() => {
-                        const newInterests = formData.interests.includes(interest)
+                        const newInterests = formData.interests.includes(
+                          interest
+                        )
                           ? formData.interests.filter((i) => i !== interest)
                           : [...formData.interests, interest];
                         setFormData({ ...formData, interests: newInterests });
                       }}
                       className={`px-3 py-1 rounded-full text-sm ${
                         formData.interests.includes(interest)
-                          ? 'bg-brand-orange text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? "bg-brand-orange text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                     >
                       {interest}
@@ -246,14 +296,22 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
                         onChange={(e) => {
                           const newCerts = [...formData.certifications];
                           newCerts[index] = e.target.value;
-                          setFormData({ ...formData, certifications: newCerts });
+                          setFormData({
+                            ...formData,
+                            certifications: newCerts,
+                          });
                         }}
                         className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
                       />
                       <button
                         onClick={() => {
-                          const newCerts = formData.certifications.filter((_, i) => i !== index);
-                          setFormData({ ...formData, certifications: newCerts });
+                          const newCerts = formData.certifications.filter(
+                            (_, i) => i !== index
+                          );
+                          setFormData({
+                            ...formData,
+                            certifications: newCerts,
+                          });
                         }}
                         className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
                       >
@@ -266,7 +324,7 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
                     onClick={() => {
                       setFormData({
                         ...formData,
-                        certifications: [...formData.certifications, '']
+                        certifications: [...formData.certifications, ""],
                       });
                     }}
                   >
@@ -281,9 +339,7 @@ export function EditProfileModal({ isOpen, onClose, onSave }: EditProfileModalPr
             <Button variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              Save Changes
-            </Button>
+            <Button onClick={handleSave}>Save Changes</Button>
           </div>
         </div>
       </div>

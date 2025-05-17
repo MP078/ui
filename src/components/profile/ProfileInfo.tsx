@@ -1,6 +1,3 @@
-import React from 'react';
-import { MapPin } from 'lucide-react';
-
 interface ProfileData {
   name: string;
   verified: boolean;
@@ -8,54 +5,54 @@ interface ProfileData {
   languages: string[];
   memberSince: string;
   interests: string[];
-  stats: Array<{
-    value: number;
-    label: string;
-  }>;
+  total_trips: number;
+  travel_days: number;
+  connections: number;
 }
 
-const profileData: ProfileData = {
-  name: 'Anne Frank',
-  verified: true,
-  bio: 'Adventure seeker | Photography Enthusiast | Mountain Lover',
-  languages: ['French', 'English', 'Nepali'],
-  memberSince: 'March 2023',
-  interests: ['#Hiking', '#Photography', '#Culture', '#Adventure', '#Nature'],
-  stats: [
-    { value: 45, label: 'Total Trips' },
-    { value: 10, label: 'Total Guides' },
-    { value: 100, label: 'Travel Days' },
-    { value: 13, label: 'Places' },
-    { value: 5000, label: 'Connections' },
-  ]
-};
-
-export default function ProfileInfo() {
+export default function ProfileInfo({
+  name,
+  verified,
+  bio,
+  languages,
+  connections,
+  interests,
+  memberSince,
+  total_trips,
+  travel_days,
+}: ProfileData) {
   return (
     <div className="pt-20 px-8">
       <div className="flex items-center gap-2">
-        <h1 className="text-xl font-semibold">{profileData.name}</h1>
-        {profileData.verified && <span className="text-blue-500">✓</span>}
+        <h1 className="text-xl font-semibold">{name}</h1>
+        {verified && <span className="text-blue-500">✓</span>}
       </div>
-      <p className="text-gray-600 mt-1">{profileData.bio}</p>
+      <p className="text-gray-600 mt-1">{bio}</p>
       <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-        <span>{profileData.languages.join(', ')}</span>
+        <span>{languages.join(", ")}</span>
         <span>•</span>
-        <span>Member since {profileData.memberSince}</span>
+        <span>{memberSince}</span>
       </div>
       <div className="flex gap-2 mt-3">
-        {profileData.interests.map(tag => (
-          <span key={tag} className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600">
-            {tag}
+        {interests.map((tag) => (
+          <span
+            key={tag}
+            className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
+          >
+            #{tag}
           </span>
         ))}
       </div>
       <div className="flex justify-between mt-8">
         <div className="flex gap-16">
-          {profileData.stats.map(stat => (
-            <div key={stat.label} className="text-center">
-              <div className="font-semibold text-xl">{stat.value}</div>
-              <div className="text-gray-600 text-sm">{stat.label}</div>
+          {[
+            { label: "Total Trips", value: total_trips },
+            { label: "Travel Days", value: travel_days },
+            { label: "Connections", value: connections },
+          ].map((item) => (
+            <div className="text-center" key={item.label}>
+              <div className="font-semibold text-xl">{item.value}</div>
+              <div className="text-gray-600 text-sm">{item.label}</div>
             </div>
           ))}
         </div>

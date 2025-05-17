@@ -7,6 +7,19 @@ export interface User {
   username?: string;
   email?: string;
   image_url: string;
+  verified: boolean | false;
+  total_trips: number | 0;
+  travel_days: number | 0;
+  connections: number | 0;
+  member_since: string | "";
+  interests: string[] | [];
+  languages: string[] | [];
+  website: string | "";
+  certifications: string[] | [];
+  bio: string | "";
+  about: string | "";
+  location: string | "";
+  phone: string | "";
 }
 
 interface UserContextType {
@@ -40,14 +53,47 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         const res = await auth.checkAuth();
         const backendUser = res.data;
 
+        const {
+          id,
+          name,
+          username,
+          email,
+          profile_image,
+          verified,
+          total_trips,
+          travel_days,
+          connections,
+          member_since,
+          interests,
+          languages,
+          website,
+          certifications,
+          bio,
+          location,
+          about,
+          phone,
+        } = backendUser;
+
         const formattedUser: User = {
-          id: backendUser.id,
-          name: backendUser.name,
-          username: backendUser.username,
-          email: backendUser.email,
+          id,
+          name,
+          username,
+          email,
           image_url:
-            backendUser.image_url ||
-            `/avatars/${getAvatarNumber(backendUser.id.toString())}.png`,
+            profile_image || `/avatars/${getAvatarNumber(id.toString())}.png`,
+          verified,
+          total_trips,
+          travel_days,
+          connections,
+          member_since,
+          interests,
+          languages,
+          website,
+          certifications,
+          bio,
+          about,
+          phone,
+          location,
         };
 
         setUser(formattedUser);

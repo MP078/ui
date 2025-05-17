@@ -70,7 +70,7 @@ const auth = {
 
     checkAuth: async () => {
         try {
-            const response = await api.get('/auth/validate_token');
+            const response = await api.get('/users');
             localStorage.setItem('isLoggedIn', 'true');
             return response.data;
         } catch (error) {

@@ -1,49 +1,62 @@
-import React from 'react';
-import { FeedPost } from '../feed/FeedPost';
-
-const posts = [
-  {
-    user: {
-      name: 'Anne Frank',
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
-      location: 'Pokhara, Nepal'
-    },
-    content: {
-      text: "Just experienced the most breathtaking sunrise over Phewa lake! The reflection of the Annapurna range on the crystal clear water was absolutely magical.",
-      images: ['https://images.unsplash.com/photo-1544735716-392fe2489ffa'],
-      timestamp: '2 hours ago'
-    },
-    engagement: {
-      likes: 250,
-      comments: 30,
-      shares: 10
-    }
-  },
-  {
-    user: {
-      name: 'Anne Frank',
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
-      location: 'Kathmandu, Nepal'
-    },
-    content: {
-      text: "Exploring the ancient temples of Kathmandu Durbar Square. The architecture and history here is simply incredible!",
-      images: ['https://images.unsplash.com/photo-1582654454409-778f6619ddc6'],
-      timestamp: '2 days ago'
-    },
-    engagement: {
-      likes: 500,
-      comments: 100,
-      shares: 100
-    }
-  }
-];
+import { useEffect, useState } from "react";
+import { FeedPost } from "../feed/FeedPost";
+import { api } from "../../lib/api";
+import { PostType } from "../../pages/Feed";
 
 export default function ProfilePosts() {
+  const [posts, setFeedPosts] = useState<
+    Array<ReturnType<typeof transformPost>>
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const transformPost = (post: PostType) => ({
+    id: post.id,
+    user: {
+      id: post.user.id,
+      name: post.user.name,
+      image: post.user.profile_image,
+      location: post.destination,
+      verified: post.user.verified,
+    },
+    content: {
+      text: post.content,
+      images: post.images.map((img) => img.image),
+      timestamp: new Date(post.created_at).toLocaleString(),
+    },
+    engagement: {
+      likes: post.likes,
+      comments: post.comments_count,
+      shares: 0,
+    },
+    liked: post.liked,
+  });
+
+  const fetchPosts = async () => {
+    try {
+      const res = await api.get("/posts");
+      const data = res.data;
+
+      const transformed = data.data.map((post: unknown) =>
+        transformPost(post as PostType)
+      );
+
+      setFeedPosts(transformed);
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch feed:", err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
   return (
     <div className="space-y-6">
-      {posts.map((post, index) => (
-        <FeedPost key={index} {...post} />
-      ))}
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        posts.map((post) => <FeedPost key={post.id} {...post} />)
+      )}
     </div>
   );
 }

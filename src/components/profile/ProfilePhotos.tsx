@@ -1,44 +1,105 @@
-import React from 'react';
-
-const photos = [
-  {
-    id: 1,
-    url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa',
-    location: 'Everest Base Camp',
-    likes: 245
-  },
-  {
-    id: 2,
-    url: 'https://images.unsplash.com/photo-1582654454409-778f6619ddc6',
-    location: 'Kathmandu Durbar Square',
-    likes: 189
-  },
-  {
-    id: 3,
-    url: 'https://images.unsplash.com/photo-1585938389612-a552a28d6914',
-    location: 'Pokhara Lake',
-    likes: 320
-  }
-];
+import { useEffect, useState } from "react";
+import { api } from "../../lib/api";
 
 export default function ProfilePhotos() {
+  const [photos, setPhotos] = useState<Array<string>>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      try {
+        const res = await api.get("/users/photos");
+        const data = res.data;
+        const transformed = data.data.map((photo: unknown) => photo as string);
+        setPhotos(transformed);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch photos:", err);
+        setLoading(false);
+      }
+    };
+    fetchPhotos();
+  }, []);
+
+  // Handle Escape key and body scroll
+  useEffect(() => {
+    if (!modalOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeModal();
+      }
+    };
+
+    document.body.classList.add("overflow-hidden");
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [modalOpen]);
+
+  const openModal = (photo: string) => {
+    setSelectedPhoto(photo);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setSelectedPhoto(null);
+  };
+
   return (
-    <div className="grid grid-cols-3 gap-4">
-      {photos.map(photo => (
-        <div key={photo.id} className="relative group">
-          <img
-            src={photo.url}
-            alt={photo.location}
-            className="w-full h-64 object-cover rounded-lg"
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
-            <div className="text-white text-center">
-              <p className="font-medium">{photo.location}</p>
-              <p className="text-sm">{photo.likes} likes</p>
+    <>
+      <div className="grid grid-cols-3 gap-4">
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          photos.map((photo) => (
+            <div
+              key={photo}
+              className="relative group cursor-pointer"
+              onClick={() => openModal(photo)}
+            >
+              <img
+                src={photo}
+                alt={photo}
+                className="w-full h-64 object-cover rounded-lg"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                <div className="text-white text-center"></div>
+              </div>
             </div>
+          ))
+        )}
+      </div>
+      {modalOpen && selectedPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
+          onClick={closeModal}
+        >
+          <div
+            className="relative w-full h-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-6 right-8 bg-orange-400 bg-opacity-90 hover:bg-orange-500 rounded-full w-12 h-12 flex items-center justify-center shadow-lg text-white text-3xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              onClick={closeModal}
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <img
+              src={selectedPhoto}
+              alt="Selected"
+              className="max-w-[90vw] max-h-[90vh] w-auto h-auto rounded-lg object-contain shadow-2xl"
+            />
           </div>
         </div>
-      ))}
-    </div>
+      )}
+    </>
   );
 }

@@ -1,25 +1,13 @@
-import React, { useState } from 'react';
-import { EditProfileModal } from './EditProfileModal';
+import { useEffect, useState } from "react";
+import { EditProfileModal } from "./EditProfileModal";
 
-interface ProfileStat {
-  value: number;
-  label: string;
-}
-
-const ProfileStats: ProfileStat[] = [
-  { value: 45, label: 'Total Trips' },
-  { value: 10, label: 'Total Guides' },
-  { value: 100, label: 'Travel Days' },
-  { value: 13, label: 'Places' },
-  { value: 5000, label: 'Connections' },
-];
-
-export default function ProfileHeader() {
+export default function ProfileHeader({ image_url }: { image_url: string }) {
   const [showEditProfile, setShowEditProfile] = useState(false);
 
-  const handleSaveProfile = (data: any) => {
-    console.log('Saving profile data:', data);
-    // Implement save logic here
+  useEffect(() => {}, []);
+
+  const handleSaveProfile = (data: unknown) => {
+    console.log("Saving profile data:", data);
   };
 
   return (
@@ -33,7 +21,7 @@ export default function ProfileHeader() {
       </div>
       <div className="absolute -bottom-16 left-8">
         <img
-          src="https://images.unsplash.com/photo-1494790108377-be9c29b29330"
+          src={image_url}
           alt="Profile"
           className="w-32 h-32 rounded-full border-4 border-white"
         />

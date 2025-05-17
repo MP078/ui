@@ -10,6 +10,23 @@ import { SearchBar } from "../components/search/SearchBar";
 import { FloatingActionButton } from "../components/ui/floating-action-button";
 import { api } from "../lib/api";
 
+export type PostType = {
+  id: string;
+  user: {
+    id: string;
+    name: string;
+    profile_image: string;
+    verified: boolean;
+  };
+  destination: string;
+  content: string;
+  images: { image: string }[];
+  created_at: string;
+  likes: number;
+  comments_count: number;
+  liked: boolean | false;
+};
+
 export default function Feed() {
   const [feedPosts, setFeedPosts] = useState<FeedPostProps[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,25 +37,8 @@ export default function Feed() {
 
   const fetchPosts = async () => {
     try {
-      const res = await api.get("/posts");
+      const res = await api.get("/posts?all=true");
       const data = res.data;
-
-      type PostType = {
-        id: string;
-        user: {
-          id: string;
-          name: string;
-          profile_image: string;
-          verified: boolean;
-        };
-        destination: string;
-        content: string;
-        images: { image: string }[];
-        created_at: string;
-        likes: number;
-        comments_count: number;
-        liked: boolean | false;
-      };
 
       const transformed = data.data.map((post: unknown) => {
         const typedPost = post as PostType;

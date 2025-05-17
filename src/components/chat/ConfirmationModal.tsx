@@ -1,6 +1,5 @@
-import React from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { Button } from '../ui/button';
+import { AlertTriangle } from "lucide-react";
+import { Button } from "../ui/button";
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -17,7 +16,7 @@ export function ConfirmationModal({
   onConfirm,
   title,
   message,
-  action
+  action,
 }: ConfirmationModalProps) {
   if (!isOpen) return null;
 
@@ -28,14 +27,11 @@ export function ConfirmationModal({
           <AlertTriangle className="w-6 h-6" />
           <h3 className="text-lg font-semibold">{title}</h3>
         </div>
-        
+
         <p className="text-gray-600 mb-6">{message}</p>
-        
+
         <div className="flex justify-end gap-3">
-          <Button
-            variant="outline"
-            onClick={onClose}
-          >
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button
