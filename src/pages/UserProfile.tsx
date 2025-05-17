@@ -49,61 +49,47 @@ export default function UserProfile() {
   const { user: currentUser } = useContext(UserContext);
 
   useEffect(() => {
-    if (currentUser && currentUser.username === username) {
+    if (!username || !currentUser) return;
+    if (currentUser.username === username) {
       navigate("/profile", { replace: true });
       return;
     }
-    const fetchUserProfile = async () => {
+
+    const fetchAll = async () => {
+      setLoading({
+        profile: true,
+        photos: true,
+        reviews: true,
+        guides: true,
+        activities: true,
+        achievements: true,
+      });
+
       try {
-        setLoading((prev) => ({ ...prev, profile: true }));
-        const response = await api.get(`/users/${username}`);
-        const userData = response.data.data;
-        const {
-          id,
-          name,
-          email,
-          profile_image,
-          verified,
-          total_trips,
-          travel_days,
-          connections,
-          member_since,
-          interests,
-          languages,
-          website,
-          certifications,
-          bio,
-          location,
-          about,
-          phone,
-          friendship_status,
-        } = userData;
+        const [
+          profileRes,
+          reviewsData,
+          guidesData,
+          activitiesData,
+          achievementsData,
+        ] = await Promise.all([
+          api.get(`/users/${username}`),
+          userService.getUserReviews(username),
+          userService.getUserGuides(username),
+          userService.getUserActivities(username),
+          userService.getUserAchievements(username),
+        ]);
 
+        const userData = profileRes.data.data;
         const formattedUser: UserProfileType = {
-          id,
-          name,
+          ...userData,
           username,
-          email,
           image_url:
-            profile_image || `/avatars/${getAvatarNumber(id.toString())}.png`,
-          verified,
-          total_trips,
-          travel_days,
-          connections,
-          member_since,
-          interests,
-          languages,
-          website,
-          certifications,
-          bio,
-          about,
-          phone,
-          location,
-          friendship_status,
+            userData.profile_image ||
+            `/avatars/${getAvatarNumber(userData.id.toString())}.png`,
         };
-        setUser(formattedUser);
 
-        setLoading((prev) => ({ ...prev, profile: false }));
+        setUser(formattedUser);
         setConnectionStatus(
           ["none", "sent", "friends", "received"].includes(
             formattedUser.friendship_status
@@ -115,73 +101,41 @@ export default function UserProfile() {
                 | "received")
             : "none"
         );
-      } catch (err: unknown) {
-        setError((prev) => ({
-          ...prev,
-          profile: "Failed to load user profile, log" + (err as Error).message,
-        }));
-        setLoading((prev) => ({ ...prev, profile: false }));
-      }
-    };
 
-    const fetchUserReviews = async () => {
-      try {
-        const reviewsData = await userService.getUserReviews(username);
         setReviews(reviewsData);
-        setLoading((prev) => ({ ...prev, reviews: false }));
-      } catch (err) {
-        setError((prev) => ({ ...prev, reviews: "Failed to load reviews" }));
-        setLoading((prev) => ({ ...prev, reviews: false }));
-      }
-    };
-
-    const fetchUserGuides = async () => {
-      try {
-        const guidesData = await userService.getUserGuides(username);
         setGuides(guidesData);
-        setLoading((prev) => ({ ...prev, guides: false }));
-      } catch (err) {
-        setError((prev) => ({ ...prev, guides: "Failed to load guides" }));
-        setLoading((prev) => ({ ...prev, guides: false }));
-      }
-    };
-
-    const fetchUserActivities = async () => {
-      try {
-        const activitiesData = await userService.getUserActivities(username);
         setActivities(activitiesData);
-        setLoading((prev) => ({ ...prev, activities: false }));
-      } catch (err) {
-        setError((prev) => ({
-          ...prev,
-          activities: "Failed to load activities",
-        }));
-        setLoading((prev) => ({ ...prev, activities: false }));
-      }
-    };
-
-    const fetchUserAchievements = async () => {
-      try {
-        const achievementsData = await userService.getUserAchievements(
-          username
-        );
         setAchievements(achievementsData);
-        setLoading((prev) => ({ ...prev, achievements: false }));
+
+        setLoading({
+          profile: false,
+          photos: false,
+          reviews: false,
+          guides: false,
+          activities: false,
+          achievements: false,
+        });
       } catch (err) {
         setError((prev) => ({
           ...prev,
+          profile: "Failed to load user profile, " + (err as Error).message,
+          reviews: "Failed to load reviews",
+          guides: "Failed to load guides",
+          activities: "Failed to load activities",
           achievements: "Failed to load achievements",
         }));
-        setLoading((prev) => ({ ...prev, achievements: false }));
+        setLoading({
+          profile: false,
+          photos: false,
+          reviews: false,
+          guides: false,
+          activities: false,
+          achievements: false,
+        });
       }
     };
 
-    fetchUserProfile();
-
-    fetchUserReviews();
-    fetchUserGuides();
-    fetchUserActivities();
-    fetchUserAchievements();
+    fetchAll();
   }, [currentUser, navigate, username]);
 
   const handleConnect = async () => {
@@ -264,7 +218,7 @@ export default function UserProfile() {
 
         <div className="grid grid-cols-12 gap-8 p-8">
           <div className="col-span-8">
-            <Routes>
+            <Routes key={username}>
               <Route path="/" element={<UserPosts username={username} />} />
               <Route
                 path="/photos"
