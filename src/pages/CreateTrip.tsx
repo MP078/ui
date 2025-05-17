@@ -227,7 +227,6 @@ export default function CreateTrip() {
       console.log("Trip created successfully:", response.data);
 
       // Show success message and navigate
-      alert("Trip created successfully!");
       navigate("/trips");
     } catch (error: unknown) {
       console.error("Error creating trip:", error);
