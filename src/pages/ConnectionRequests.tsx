@@ -4,6 +4,7 @@ import { SearchBar } from "../components/search/SearchBar";
 import { ConfirmationDialog } from "../components/ui/confirmation-dialog";
 import { api } from "../lib/api";
 import { timeAgo } from "../utils/timeago";
+import { getAvatarNumber } from "../context/UserContext";
 
 interface ConnectionRequest {
   id: string;
@@ -60,7 +61,11 @@ export default function ConnectionRequests() {
             user: {
               id: item.sender_id ?? item.receiver_id ?? "",
               name: item.name,
-              image: item.avatar_url,
+              image:
+                item.avatar_url ||
+                `/avatars/${getAvatarNumber(
+                  item.sender_id ?? item.receiver_id ?? ""
+                )}.png`,
               location: item.location,
               mutualFriends: item.mutual_friends || 0,
               timestamp: item.created_at,
@@ -226,7 +231,9 @@ export default function ConnectionRequests() {
                 >
                   <div className="flex items-center gap-4">
                     <img
-                      src={request.user.image}
+                      src={
+                        request.user.image || `/avatars/${request.user.id}.png`
+                      }
                       alt={request.user.name}
                       className="w-12 h-12 rounded-full object-cover"
                     />

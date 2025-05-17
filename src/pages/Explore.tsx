@@ -1,53 +1,57 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios'; // fix for undefined `api`
+import { useState, useEffect } from "react";
 
-import { ExploreSearch } from '../components/explore/ExploreSearch';
-import { FilterChips } from '../components/explore/FilterChips';
-import { TravelerCard } from '../components/explore/TravelerCard';
-import { ActiveTripCard } from '../components/explore/ActiveTripCard';
-import { DestinationDetailModal, Destination } from '../components/explore/DestinationDetailModal';
-import { ConfirmationDialog } from '../components/ui/confirmation-dialog';
-import { api } from '../lib/api';
+import { ExploreSearch } from "../components/explore/ExploreSearch";
+import { FilterChips } from "../components/explore/FilterChips";
+import { TravelerCard } from "../components/explore/TravelerCard";
+import { ActiveTripCard } from "../components/explore/ActiveTripCard";
+import {
+  DestinationDetailModal,
+  Destination,
+} from "../components/explore/DestinationDetailModal";
+import { ConfirmationDialog } from "../components/ui/confirmation-dialog";
+import { api } from "../lib/api";
 
-type TabType = 'destinations' | 'travelers' | 'trips';
+type TabType = "destinations" | "travelers" | "trips";
 
 const tabs: { id: TabType; label: string }[] = [
-  { id: 'destinations', label: 'Destinations' },
-  { id: 'travelers', label: 'Travelers' },
-  { id: 'trips', label: 'Active Trips' }
+  { id: "destinations", label: "Destinations" },
+  { id: "travelers", label: "Travelers" },
+  { id: "trips", label: "Active Trips" },
 ];
 
 const filters = {
-  destinations: ['Popular', 'Nearby', 'Recommended', 'Trending'],
-  travelers: ['Online', 'Recently Active', 'Mutual Friends', 'New'],
-  trips: ['Starting Soon', 'Open', 'Popular', 'Weekend']
+  destinations: ["Popular", "Nearby", "Recommended", "Trending"],
+  travelers: ["Online", "Recently Active", "Mutual Friends", "New"],
+  trips: ["Starting Soon", "Open", "Popular", "Weekend"],
 };
 
 export default function Explore() {
-  const [activeTab, setActiveTab] = useState<TabType>('destinations');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('');
-  const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
-  const [showPlanTripConfirmation, setShowPlanTripConfirmation] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("destinations");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("");
+  const [selectedDestination, setSelectedDestination] =
+    useState<Destination | null>(null);
+  const [showPlanTripConfirmation, setShowPlanTripConfirmation] =
+    useState(false);
 
-  const currentFilters = filters[activeTab].map(filter => ({
+  const currentFilters = filters[activeTab].map((filter) => ({
     id: filter.toLowerCase(),
     label: filter,
-    active: filter.toLowerCase() === activeFilter
+    active: filter.toLowerCase() === activeFilter,
   }));
 
   const handleFilterToggle = (id: string) => {
-    setActiveFilter(activeFilter === id ? '' : id);
+    setActiveFilter(activeFilter === id ? "" : id);
   };
 
   const handleViewDestinationDetails = (destination: Destination) => {
     setSelectedDestination(destination);
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
   };
 
   const handleCloseModal = () => {
     setSelectedDestination(null);
-    document.body.style.overflow = 'unset';
+    document.body.style.overflow = "unset";
   };
 
   const handlePlanTrip = (destinationId: string) => {
@@ -65,17 +69,19 @@ export default function Explore() {
       </div>
 
       <div className="flex border-b mb-6 overflow-x-auto">
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => {
               setActiveTab(tab.id);
-              setActiveFilter('');
+              setActiveFilter("");
             }}
             className={`px-6 py-3 font-medium text-sm relative whitespace-nowrap
-              ${activeTab === tab.id
-                ? 'text-brand-orange'
-                : 'text-gray-600 hover:text-gray-900'}
+              ${
+                activeTab === tab.id
+                  ? "text-brand-orange"
+                  : "text-gray-600 hover:text-gray-900"
+              }
             `}
           >
             {tab.label}
@@ -87,18 +93,18 @@ export default function Explore() {
       </div>
 
       <div className="mb-6 overflow-x-auto">
-        <FilterChips
-          filters={currentFilters}
-          onToggle={handleFilterToggle}
-        />
+        <FilterChips filters={currentFilters} onToggle={handleFilterToggle} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {activeTab === 'destinations' && (
-          <DestinationsList filter={activeFilter} onViewDetails={handleViewDestinationDetails} />
+        {activeTab === "destinations" && (
+          <DestinationsList
+            filter={activeFilter}
+            onViewDetails={handleViewDestinationDetails}
+          />
         )}
-        {activeTab === 'travelers' && <TravelersList filter={activeFilter} />}
-        {activeTab === 'trips' && <ActiveTripsList filter={activeFilter} />}
+        {activeTab === "travelers" && <TravelersList filter={activeFilter} />}
+        {activeTab === "trips" && <ActiveTripsList filter={activeFilter} />}
       </div>
 
       {selectedDestination && (
@@ -161,14 +167,14 @@ const fetchTravelers = async () => {
 
     const travelers = data.map((user: any) => ({
       id: user.username,
-      name: user.name ,
-      image: user.profile_image || 'https://via.placeholder.com/150',
-      location: user.location || 'Unknown',
+      name: user.name,
+      image: user.profile_image || "https://via.placeholder.com/150",
+      location: user.location || "Unknown",
       mutualConnections: user.connections || 0,
       interests: user.interests || [],
-      isOnline: false,  // You can improve this if you have online status
-      lastActive: 'Recently', // No info in API, default
-      connectionStatus: user.friendship_status || 'none'
+      isOnline: false, // You can improve this if you have online status
+      lastActive: "Recently", // No info in API, default
+      connectionStatus: user.friendship_status || "none",
     }));
 
     return travelers;
@@ -178,7 +184,13 @@ const fetchTravelers = async () => {
   }
 };
 
-function DestinationsList({ filter, onViewDetails }: { filter: string, onViewDetails: (destination: Destination) => void }) {
+function DestinationsList({
+  filter,
+  onViewDetails,
+}: {
+  filter: string;
+  onViewDetails: (destination: Destination) => void;
+}) {
   const [destinations, setDestinations] = useState<Destination[]>([]);
 
   useEffect(() => {
@@ -191,8 +203,11 @@ function DestinationsList({ filter, onViewDetails }: { filter: string, onViewDet
 
   return (
     <>
-      {destinations.map(destination => (
-        <div key={destination.id} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
+      {destinations.map((destination) => (
+        <div
+          key={destination.id}
+          className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
+        >
           <div className="relative">
             <img
               src={destination.image}
@@ -206,15 +221,44 @@ function DestinationsList({ filter, onViewDetails }: { filter: string, onViewDet
           <div className="p-6">
             <h3 className="font-semibold text-lg mb-1">{destination.name}</h3>
             <div className="flex items-center gap-1 mb-2 text-sm text-gray-600">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-map-pin"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-map-pin"
+              >
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
               <span>{destination.location}</span>
             </div>
-            <div className="flex items-center gap-1 mb-3"> 
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-star fill-yellow-400 text-yellow-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <div className="flex items-center gap-1 mb-3">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-star fill-yellow-400 text-yellow-400"
+              >
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
               <span className="font-medium">{destination.rating}</span>
             </div>
-            <p className="text-gray-600 text-sm mb-4 line-clamp-2">{destination.description}</p>
-            <button 
+            <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+              {destination.description}
+            </p>
+            <button
               className="w-full bg-brand-orange text-white py-2 rounded-lg hover:bg-brand-orange/90 transition-colors"
               onClick={() => onViewDetails(destination)}
             >
@@ -238,7 +282,10 @@ function TravelersList({ filter }: { filter: string }) {
     loadTravelers();
   }, []);
 
-  const handleStatusChange = async (id: string, newStatus: "none" | "sent" | "received" | "friends") => {
+  const handleStatusChange = async (
+    id: string,
+    newStatus: "none" | "sent" | "received" | "friends"
+  ) => {
     try {
       if (newStatus === "sent") {
         // Send friend request
@@ -251,8 +298,10 @@ function TravelersList({ filter }: { filter: string }) {
         await api.post(`/friendships/${id}/accept`);
       }
       // Update state locally after success
-      setTravelers(prev =>
-        prev.map(t => (t.id === id ? { ...t, connectionStatus: newStatus } : t))
+      setTravelers((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, connectionStatus: newStatus } : t
+        )
       );
     } catch (err) {
       console.error("Failed to update friendship status:", err);
@@ -282,10 +331,13 @@ const fetchTrips = async () => {
       destination: trip.title,
       startDate: trip.start_date,
       endDate: trip.end_date,
-      tripStatus: 'open',
+      tripStatus: "open",
       totalTravelers: trip.members_count || 0,
       maxParticipants: trip.maximum_participants,
-      imageUrl: typeof trip.cover_image_url === 'string' ? trip.cover_image_url : 'https://via.placeholder.com/300',
+      imageUrl:
+        typeof trip.cover_image_url === "string"
+          ? trip.cover_image_url
+          : "https://via.placeholder.com/300",
       summary: trip.description,
     }));
 
@@ -313,10 +365,9 @@ function ActiveTripsList({ filter }: { filter: string }) {
         <ActiveTripCard
           key={trip.tripId}
           trip={trip}
-          onJoinRequest={(id) => console.log('Join request:', id)}
+          onJoinRequest={(id) => console.log("Join request:", id)}
         />
       ))}
     </>
   );
 }
-

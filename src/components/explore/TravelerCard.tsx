@@ -1,9 +1,16 @@
-import React from 'react';
-import { MapPin, Users } from 'lucide-react';
-import { ConnectButton } from '../ui/connect-button';
+import React from "react";
+import { MapPin, Users } from "lucide-react";
+import { ConnectButton } from "../ui/connect-button";
 
 export interface TravelerCardProps {
+  username: string;
+  id: string;
+  image: string | undefined;
+  name: string | undefined;
+  location: string;
+  connectionStatus: "none" | "sent" | "friends" | "received";
   traveler: {
+    username: string;
     id: string;
     name: string;
     image: string;
@@ -14,10 +21,16 @@ export interface TravelerCardProps {
     lastActive?: string;
     connectionStatus: "none" | "sent" | "friends" | "received";
   };
-  onStatusChange: (id: string, newStatus: "none" | "sent" | "received" | "friends") => void;
+  onStatusChange: (
+    id: string,
+    newStatus: "none" | "sent" | "received" | "friends"
+  ) => void;
 }
 
-export const TravelerCard: React.FC<TravelerCardProps> = ({ traveler, onStatusChange }) => {
+export const TravelerCard: React.FC<TravelerCardProps> = ({
+  traveler,
+  onStatusChange,
+}) => {
   const {
     id,
     name,
@@ -38,15 +51,21 @@ export const TravelerCard: React.FC<TravelerCardProps> = ({ traveler, onStatusCh
     <div className="bg-white rounded-lg p-6 shadow-sm">
       <div className="flex items-center gap-4">
         <div className="relative cursor-pointer">
-          <img src={image} alt={name} className="w-16 h-16 rounded-full object-cover" />
+          <img
+            src={image}
+            alt={name}
+            className="w-16 h-16 rounded-full object-cover"
+          />
           <div
             className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
-              isOnline ? 'bg-green-500' : 'bg-gray-400'
+              isOnline ? "bg-green-500" : "bg-gray-400"
             }`}
           />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-lg cursor-pointer hover:text-brand-orange">{name}</h3>
+          <h3 className="font-semibold text-lg cursor-pointer hover:text-brand-orange">
+            {name}
+          </h3>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <MapPin className="w-4 h-4" />
             <span>{location}</span>
@@ -71,13 +90,17 @@ export const TravelerCard: React.FC<TravelerCardProps> = ({ traveler, onStatusCh
 
       <div className="mt-4 flex items-center justify-between">
         <span className="text-sm text-gray-500">
-          {isOnline ? 'Online' : `Last seen ${lastActive}`}
+          {isOnline ? "Online" : `Last seen ${lastActive}`}
         </span>
         <ConnectButton
           username={id}
           name={name}
           status={connectionStatus}
-          className={connectionStatus === 'none' ? 'bg-orange-500 text-white hover:bg-orange-600' : ''}
+          className={
+            connectionStatus === "none"
+              ? "bg-orange-500 text-white hover:bg-orange-600"
+              : ""
+          }
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
           onCancel={handleCancel}
