@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ChevronRight } from "lucide-react";
 import { StoryCircle } from "./StoryCircle";
 import { AddStoryModal } from "./AddStoryModal";
-import { useNavigate, useLocation } from "react-router-dom";
+import { StoryViewerModal } from "./StoryViewer";
 import { api } from "../../lib/api";
 import { getAvatarNumber } from "../../context/UserContext";
 
@@ -36,8 +36,10 @@ type StoryRowItem =
 export function StoryRow() {
   const [isAddStoryModalOpen, setIsAddStoryModalOpen] = useState(false);
   const [userStories, setUserStories] = useState<UserStory[]>([]);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [activeUserStory, setActiveUserStory] = useState<UserStory | null>(
+    null
+  );
 
   // Fetch stories from backend
   // Define types for API response inline
@@ -88,9 +90,11 @@ export function StoryRow() {
     if ("isAdd" in story && story.isAdd) {
       setIsAddStoryModalOpen(true);
     } else {
-      navigate(`/stories/${story.id}`, {
-        state: { backgroundLocation: location },
-      });
+      const userStory = userStories.find((u) => u.id === story.id);
+      if (userStory) {
+        setActiveUserStory(userStory);
+        setViewerOpen(true);
+      }
     }
   };
 
@@ -120,7 +124,7 @@ export function StoryRow() {
               image={story.image}
               name={story.name}
               isAdd={"isAdd" in story && story.isAdd}
-              onClick={() => handleStoryClick(story)}
+              onClick={handleStoryClick.bind(null, story)}
             />
           ))}
         </div>
@@ -133,6 +137,15 @@ export function StoryRow() {
         isOpen={isAddStoryModalOpen}
         onClose={() => setIsAddStoryModalOpen(false)}
         onSubmit={handleAddStory}
+      />
+      <StoryViewerModal
+        isOpen={viewerOpen}
+        onClose={() => {
+          setViewerOpen(false);
+          setActiveUserStory(null);
+        }}
+        userStory={activeUserStory || undefined}
+        userId={activeUserStory?.id}
       />
     </div>
   );

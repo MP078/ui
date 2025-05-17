@@ -8,7 +8,6 @@ import {
   Heart,
   Send,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
 interface Story {
@@ -25,61 +24,89 @@ interface UserStories {
   image: string;
   stories: Story[];
 }
-// Types for backend response
-interface BackendStory {
+
+export interface StoryViewerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  userStory?: UserStories;
+  userId?: string | number;
+}
+
+// Types for API normalization
+interface APIUser {
+  id: string | number;
+  name: string;
+  avatar_url?: string | false;
+}
+interface APIStory {
   id: string | number;
   image_url?: string;
   caption?: string;
   location?: string;
   music?: { title: string; artist: string };
-  duration?: number;
-}
-interface BackendUser {
-  id: string | number;
-  name: string;
-  image_url?: string;
-  avatar_url?: string;
-  stories?: BackendStory[];
 }
 
-export default function StoryViewer() {
-  const { userId } = useParams();
-  const navigate = useNavigate();
+export function StoryViewerModal({
+  isOpen,
+  onClose,
+  userStory,
+  userId,
+}: StoryViewerModalProps) {
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [isPaused] = useState(false); // Remove setIsPaused
-  const [userStories, setUserStories] = useState<UserStories | null>(null);
+  const [isPaused] = useState(false);
+  const [userStories, setUserStories] = useState<UserStories | null>(
+    userStory || null
+  );
 
+  // Always use the userStory prop if present
   useEffect(() => {
-    const fetchStories = async () => {
-      try {
-        const res = await axios.get("/stories");
-        const users: BackendUser[] = res.data.users_with_stories || res.data;
-        const normalized: UserStories[] = users.map((user) => ({
-          id: user.id,
-          name: user.name,
-          image: user.image_url || user.avatar_url || "",
-          stories: (user.stories || []).map((story: BackendStory) => ({
-            id: story.id,
-            image: story.image_url || "",
-            caption: story.caption,
-            location: story.location,
-            music: story.music,
-            duration: story.duration || 5000,
-          })),
-        }));
-        const found = normalized.find((u) => String(u.id) === String(userId));
-        if (!found) {
-          navigate(-1);
-        } else {
-          setUserStories(found);
+    if (userStory) {
+      setUserStories(userStory);
+      setCurrentStoryIndex(0);
+      setProgress(0);
+    } else if (!userStories && userId) {
+      // Only fetch if userStory is not provided
+      const fetchStories = async () => {
+        try {
+          const res = await axios.get("/stories");
+          const normalized: UserStories[] = (res.data || []).map(
+            (entry: { user: APIUser; stories: APIStory[] }) => ({
+              id: entry.user.id,
+              name: entry.user.name,
+              image:
+                typeof entry.user.avatar_url === "string" &&
+                entry.user.avatar_url
+                  ? entry.user.avatar_url
+                  : `/avatars/${(Number(entry.user.id) % 10) + 1}.png`,
+              stories: (entry.stories || []).map((story) => ({
+                id: story.id,
+                image: story.image_url || "",
+                caption: story.caption,
+                location: story.location,
+                music: story.music,
+                duration: 5000,
+              })),
+            })
+          );
+          const found = normalized.find((u) => String(u.id) === String(userId));
+          if (found) setUserStories(found);
+        } catch {
+          // Silently fail if fetch fails (modal just doesn't show)
         }
-      } catch {
-        navigate(-1);
-      }
-    };
-    fetchStories();
-  }, [userId, navigate]);
+      };
+      fetchStories();
+    }
+    // eslint-disable-next-line
+  }, [userStory, userId]);
+
+  // Reset story index and progress when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setCurrentStoryIndex(0);
+      setProgress(0);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!userStories) return;
@@ -96,7 +123,7 @@ export default function StoryViewer() {
               setCurrentStoryIndex((prev) => prev + 1);
               return 0;
             } else {
-              navigate(-1);
+              onClose();
               return 100;
             }
           }
@@ -105,10 +132,11 @@ export default function StoryViewer() {
       }, interval);
       return () => clearInterval(timer);
     }
-  }, [currentStoryIndex, userStories, navigate, isPaused]);
+  }, [currentStoryIndex, userStories, isPaused, onClose]);
 
-  if (!userStories) return null;
+  if (!isOpen || !userStories) return null;
   const currentStory = userStories.stories[currentStoryIndex];
+
   const handlePrevStory = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (currentStoryIndex > 0) {
@@ -122,14 +150,18 @@ export default function StoryViewer() {
       setCurrentStoryIndex((prev) => prev + 1);
       setProgress(0);
     } else {
-      navigate(-1);
+      onClose();
     }
   };
-  const handleClose = () => {
-    navigate(-1);
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) onClose();
   };
+
   return (
-    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="relative w-full max-w-[380px] aspect-[9/16] bg-black overflow-hidden rounded-2xl">
         <img
           src={currentStory.image}
@@ -167,12 +199,11 @@ export default function StoryViewer() {
               <span className="text-white font-semibold text-sm">
                 {userStories.name}
               </span>
-              {/* Add more info if needed */}
             </div>
           </div>
           <button
             className="absolute top-4 right-4 text-white"
-            onClick={handleClose}
+            onClick={onClose}
           >
             <X />
           </button>
@@ -215,3 +246,5 @@ export default function StoryViewer() {
     </div>
   );
 }
+
+export default StoryViewerModal;
