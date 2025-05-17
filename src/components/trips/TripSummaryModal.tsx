@@ -1,19 +1,28 @@
-import React from 'react';
-import { X, Calendar, DollarSign, Image as ImageIcon } from 'lucide-react';
-import { TripSummary } from '../../types/trip';
+import { X, Calendar, DollarSign } from "lucide-react";
 
 interface TripSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  summary: TripSummary;
   tripDestination: string;
+  cost: string;
+  total_days: string;
+  highlights: string[];
+  photos: string[];
 }
 
-export function TripSummaryModal({ isOpen, onClose, summary, tripDestination }: TripSummaryModalProps) {
+export function TripSummaryModal({
+  isOpen,
+  onClose,
+  total_days,
+  cost,
+  tripDestination,
+  highlights,
+  photos,
+}: TripSummaryModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       role="dialog"
       aria-labelledby="modal-title"
@@ -39,14 +48,14 @@ export function TripSummaryModal({ isOpen, onClose, summary, tripDestination }: 
               <Calendar className="w-6 h-6 text-brand-orange" />
               <div>
                 <p className="text-sm text-gray-500">Duration</p>
-                <p className="font-medium">{summary.totalDays} Days</p>
+                <p className="font-medium">{total_days} Days</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
               <DollarSign className="w-6 h-6 text-brand-orange" />
               <div>
                 <p className="text-sm text-gray-500">Total Cost</p>
-                <p className="font-medium">${summary.totalCost}</p>
+                <p className="font-medium">${cost}</p>
               </div>
             </div>
           </div>
@@ -54,7 +63,7 @@ export function TripSummaryModal({ isOpen, onClose, summary, tripDestination }: 
           <div>
             <h3 className="font-medium mb-3">Trip Highlights</h3>
             <ul className="list-disc list-inside space-y-2 text-gray-600">
-              {summary.highlights.map((highlight, index) => (
+              {highlights.map((highlight, index) => (
                 <li key={index}>{highlight}</li>
               ))}
             </ul>
@@ -63,8 +72,11 @@ export function TripSummaryModal({ isOpen, onClose, summary, tripDestination }: 
           <div>
             <h3 className="font-medium mb-3">Photos</h3>
             <div className="grid grid-cols-3 gap-2">
-              {summary.photos.map((photo, index) => (
-                <div key={index} className="aspect-square rounded-lg overflow-hidden">
+              {photos.map((photo, index) => (
+                <div
+                  key={index}
+                  className="aspect-square rounded-lg overflow-hidden"
+                >
                   <img
                     src={photo}
                     alt={`Trip photo ${index + 1}`}

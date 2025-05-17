@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StatModal } from './StatModal';
+import React, { useEffect, useState } from "react";
+import { StatModal } from "./StatModal";
 
 interface StatCardProps {
   icon: string;
@@ -10,6 +10,19 @@ interface StatCardProps {
 
 export function StatCard({ icon, label, value, details }: StatCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, []);
 
   return (
     <>

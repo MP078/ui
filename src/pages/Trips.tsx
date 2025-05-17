@@ -1,191 +1,194 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, ChevronRight, Eye, Star, X, AlertTriangle, MoreVertical, MessageCircle, ChevronUp } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { SearchBar } from '../components/search/SearchBar';
-import { TripHistoryCard } from '../components/trips/TripHistoryCard';
-import { TripSummaryModal } from '../components/trips/TripSummaryModal';
-import { ReviewModal } from '../components/reviews/ReviewModal';
-import { TripDetailModal } from '../components/trips/TripDetailModal';
-import { Trip } from '../types/trip';
-import { StatCard } from '../components/stats/StatCard';
-import { ConfirmationDialog } from '../components/ui/confirmation-dialog';
-import { upcomingTrips, travelHistory } from '../data/upcomingtrips';
-import { formatDate } from '../utils/date';
+import { useContext, useEffect, useState } from "react";
+import { UserContext } from "../context/UserContext";
+import { StatCard } from "../components/stats/StatCard";
+import {
+  AlertTriangle,
+  MessageCircle,
+  MoreVertical,
+  ChevronRight,
+  ChevronUp,
+  MapPin,
+} from "lucide-react";
+import { api } from "../lib/api";
+import { SearchBar } from "../components/search/SearchBar";
+import { Button } from "../components/ui/button";
+import { Link } from "react-router-dom";
+import { TripHistoryCard } from "../components/trips/TripHistoryCard";
+import { TripSummaryModal } from "../components/trips/TripSummaryModal";
+import { ReviewModal } from "../components/reviews/ReviewModal";
+import { TripDetailModal } from "../components/trips/TripDetailModal";
+import { ConfirmationDialog } from "../components/ui/confirmation-dialog";
 
-const statistics = {
-  totalTrips: 45,
-  places: 13,
-  travelGroups: 10,
-  travelDays: 100,
-  connections: 5000
+// Helper function to format trip ID for display
+const formatTripId = (tripId: string) => {
+  if (!tripId) return "";
+  return tripId.substring(0, 6).toUpperCase();
 };
 
-const statisticsDetails = {
-  places: [
-    { id: '1', name: 'Everest Base Camp', country: 'Nepal', visitDate: '2024-01-15' },
-    { id: '2', name: 'Annapurna Circuit', country: 'Nepal', visitDate: '2023-12-10' },
-    { id: '3', name: 'Pokhara', country: 'Nepal', visitDate: '2023-11-20' },
-    { id: '4', name: 'Kathmandu', country: 'Nepal', visitDate: '2023-10-05' },
-  ],
-  travelGroups: [
-    { id: '1', name: 'Adventure Seekers', members: 12, tripCount: 5 },
-    { id: '2', name: 'Culture Explorers', members: 8, tripCount: 3 },
-    { id: '3', name: 'Mountain Lovers', members: 15, tripCount: 7 },
-  ],
-  travelDays: [
-    { id: '1', trip: 'Everest Base Camp', startDate: '2024-01-15', endDate: '2024-01-28', days: 14 },
-    { id: '2', trip: 'Annapurna Circuit', startDate: '2023-12-10', endDate: '2023-12-22', days: 13 },
-    { id: '3', trip: 'Pokhara Trip', startDate: '2023-11-20', endDate: '2023-11-25', days: 6 },
-  ],
-  connections: [
-    { 
-      id: '1', 
-      name: 'Sarah Chen', 
-      username: '@sarahchen',
-      location: 'San Francisco, USA', 
-      tripsTogether: 3,
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330'
-    },
-    { 
-      id: '2', 
-      name: 'Mike Johnson', 
-      username: '@mikej',
-      location: 'London, UK', 
-      tripsTogether: 2,
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e'
-    },
-    { 
-      id: '3', 
-      name: 'Raj Patel', 
-      username: '@rajpatel',
-      location: 'Mumbai, India', 
-      tripsTogether: 4,
-      image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde'
-    },
-    { 
-      id: '4', 
-      name: 'Emma Wilson', 
-      username: '@emmaw',
-      location: 'Sydney, Australia', 
-      tripsTogether: 1,
-      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb'
-    }
-  ]
-};
+// Helper to normalize trip data
+const normalizeTrip = (trip: any) => ({
+  ...trip,
+  // Always use string for trip_id, use id as is
+  trip_id: trip.id || "",
+  displayId: formatTripId(trip.id || ""),
 
-const travelGroups = [
-  {
-    name: 'Adventure Seekers',
-    members: 12,
-    lastTrip: '2 Weeks ago',
-    upcomingTrips: 1,
-    image: 'https://images.unsplash.com/photo-1527525443983-6e60c75fff46'
+  // Use title as the primary field
+  title: trip.title || "Untitled Trip",
+
+  // Use location only if needed
+  destination: trip.title || "Unknown Location",
+
+  // Ensure start/end dates use consistent naming
+  start_date: trip.start_date || trip.startDate,
+  end_date: trip.end_date || trip.endDate,
+
+  // Set status fields consistently
+  status: trip.status || "upcoming",
+  tripStatus: trip.tripStatus || trip.participation_status || "open",
+
+  // Calculate days if not provided
+  days:
+    trip.days ||
+    ((trip.start_date || trip.startDate) && (trip.end_date || trip.endDate)
+      ? Math.max(
+          1,
+          Math.ceil(
+            (new Date(trip.end_date || trip.endDate).getTime() -
+              new Date(trip.start_date || trip.startDate).getTime()) /
+              (1000 * 60 * 60 * 24)
+          ) + 1
+        )
+      : undefined),
+
+  // Set consistent member count
+  totalTravelers: trip.totalTravelers || trip.members_count || 1,
+
+  // Ensure difficulty is consistent
+  difficulty: trip.difficulty || "moderate",
+
+  // Default image if not provided
+  imageUrl: trip.cover_image_url || "/placeholder/trip.png",
+
+  // Initialize summary if not provided
+  summary: trip.summary || {
+    totalDays:
+      trip.days ||
+      ((trip.start_date || trip.start_date) && (trip.end_date || trip.end_date)
+        ? Math.max(
+            1,
+            Math.ceil(
+              (new Date(trip.end_date || trip.end_date).getTime() -
+                new Date(trip.start_date || trip.start_date).getTime()) /
+                (1000 * 60 * 60 * 24)
+            ) + 1
+          )
+        : undefined),
+    highlights: trip.highlights || [],
+    totalCost: (trip.cost && trip.cost.amount) || undefined,
   },
-  {
-    name: 'Culture Explorers',
-    members: 8,
-    lastTrip: '2 Weeks ago',
-    upcomingTrips: 2,
-    image: 'https://images.unsplash.com/photo-1539635278303-d4002c07eae3'
-  },
-  {
-    name: 'Mountain Lovers',
-    members: 15,
-    lastTrip: '2 Weeks ago',
-    upcomingTrips: 3,
-    image: 'https://images.unsplash.com/photo-1530789253388-582c481c54b0'
-  },
-  {
-    name: 'Nature Lovers',
-    members: 5,
-    lastTrip: '2 Weeks ago',
-    upcomingTrips: 3,
-    image: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b'
-  },
-  {
-    name: 'City Wanderers',
-    members: 10,
-    lastTrip: '1 Week ago',
-    upcomingTrips: 2,
-    image: 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b'
-  },
-  {
-    name: 'Beach Enthusiasts',
-    members: 7,
-    lastTrip: '3 Weeks ago',
-    upcomingTrips: 1,
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e'
-  },
-  {
-    name: 'Food Travelers',
-    members: 9,
-    lastTrip: '4 Days ago',
-    upcomingTrips: 2,
-    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0'
-  },
-  {
-    name: 'History Buffs',
-    members: 6,
-    lastTrip: '1 Month ago',
-    upcomingTrips: 1,
-    image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5'
-  }
-];
+});
 
 export default function Trips() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const { user } = useContext(UserContext);
+  const [tripsData, setTripsData] = useState([]);
+  const [connectionsData, setConnectionsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // New state variables
+  const [selectedTrip, setSelectedTrip] = useState<any | null>(null);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [showDisconnectConfirmation, setShowDisconnectConfirmation] = useState(false);
-  const [selectedConnection, setSelectedConnection] = useState<{id: string, name: string} | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  
+  const [showDisconnectConfirmation, setShowDisconnectConfirmation] =
+    useState(false);
+  const [selectedConnection, setSelectedConnection] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [expandedSections, setExpandedSections] = useState({
     upcomingTrips: false,
     travelHistory: false,
-    travelGroups: false
   });
 
   const collapsedLimits = {
     upcomingTrips: 3,
     travelHistory: 3,
-    travelGroups: 4
-  };
-
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
   };
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [tripsResponse, connectionsResponse] = await Promise.all([
+          api.get("/trips", {
+            params: {
+              username: user?.username,
+            },
+          }),
+          api.get("/friendships"),
+        ]);
+
+        // Normalize all trips
+        const processedTrips = (tripsResponse.data.data || []).map(
+          normalizeTrip
+        );
+
+        setTripsData(processedTrips);
+        setConnectionsData(connectionsResponse.data.data || []);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setLoading(false);
+      }
+    };
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('[data-menu-trigger]')) {
+      if (!target.closest("[data-menu-trigger]")) {
         setOpenMenuId(null);
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
+    document.addEventListener("click", handleClickOutside);
 
-  const handleMenuClick = (connectionId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setOpenMenuId(openMenuId === connectionId ? null : connectionId);
+    fetchData();
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [user?.username]);
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
 
+  const handleMenuClick = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === id ? null : id);
+  };
+
+  const handleDisconnect = (connection: { id: number; name: string }) => {
+    setSelectedConnection(connection);
+    setShowDisconnectConfirmation(true);
+  };
+
+  const confirmDisconnect = () => {
+    if (selectedConnection) {
+      console.log(`Disconnecting from ${selectedConnection.name}`);
+      // Add disconnect logic here
+      setShowDisconnectConfirmation(false);
+    }
+  };
+
   const handleViewDetails = (tripId: string) => {
-    const trip = [...upcomingTrips, ...travelHistory].find(t => t.tripId === tripId);
-    
+    const trip = tripsData.find(
+      (t: any) => t.trip_id === tripId || t.id === tripId
+    );
     if (trip) {
       setSelectedTrip(trip);
       setIsDetailModalOpen(true);
@@ -193,7 +196,9 @@ export default function Trips() {
   };
 
   const handleViewSummary = (tripId: string) => {
-    const trip = [...upcomingTrips, ...travelHistory].find(t => t.tripId === tripId);
+    const trip = tripsData.find(
+      (t: any) => t.trip_id === tripId || t.id === tripId
+    );
     if (trip && trip.summary) {
       setSelectedTrip(trip);
       setIsSummaryModalOpen(true);
@@ -201,42 +206,36 @@ export default function Trips() {
   };
 
   const handleReviewTrip = (tripId: string) => {
-    setSelectedTrip(travelHistory.find(t => t.tripId === tripId) || null);
+    const trip = tripsData.find(
+      (t: any) => t.trip_id === tripId || t.id === tripId
+    );
+    setSelectedTrip(trip || null);
     setIsReviewModalOpen(true);
   };
 
-  const handleDisconnect = (connection: {id: string, name: string}) => {
-    setSelectedConnection(connection);
-    setShowDisconnectConfirmation(true);
-  };
+  if (!user || loading) return <div>...Loading</div>;
 
-  const confirmDisconnect = () => {
-    if (selectedConnection) {
-      console.log('Disconnecting from:', selectedConnection.name);
-      // Add disconnect logic here
-    }
-  };
+  const { travel_days, total_trips, connections } = user;
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy':
-        return 'bg-green-100 text-green-800';
-      case 'moderate':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'difficult':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Filter trips into upcoming and past trips
+  const currentDate = new Date();
+  const upcomingTrips = tripsData.filter(
+    (trip: any) => new Date(trip.start_date) > currentDate
+  );
+  const pastTrips = tripsData.filter(
+    (trip: any) => new Date(trip.end_date) <= currentDate
+  );
 
   const connectionDetails = (
     <div className="space-y-4">
-      {statisticsDetails.connections.map(connection => (
-        <div key={connection.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+      {connectionsData.map((connection: any) => (
+        <div
+          key={connection.id}
+          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+        >
           <div className="flex items-center gap-3">
             <img
-              src={connection.image}
+              src={connection.avatar_url}
               alt={connection.name}
               className="w-12 h-12 rounded-full object-cover"
             />
@@ -248,26 +247,28 @@ export default function Trips() {
           </div>
           <div className="flex items-center gap-2">
             <div className="text-sm text-brand-orange mr-4">
-              {connection.tripsTogether} trips together
+              {connection.trips_together} trips together
             </div>
             <div className="relative">
-              <button 
+              <button
                 data-menu-trigger
                 className={`p-2 rounded-full transition-colors ${
-                  openMenuId === connection.id ? 'bg-gray-200' : 'hover:bg-gray-200'
+                  openMenuId === connection.id
+                    ? "bg-gray-200"
+                    : "hover:bg-gray-200"
                 }`}
                 onClick={(e) => handleMenuClick(connection.id, e)}
               >
                 <MoreVertical className="w-5 h-5 text-gray-600" />
               </button>
               {openMenuId === connection.id && (
-                <div 
+                <div
                   className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
                     onClick={() => {
-                      console.log('Message:', connection.name);
+                      console.log("Message:", connection.name);
                       setOpenMenuId(null);
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
@@ -277,7 +278,10 @@ export default function Trips() {
                   </button>
                   <button
                     onClick={() => {
-                      handleDisconnect({ id: connection.id, name: connection.name });
+                      handleDisconnect({
+                        id: connection.id,
+                        name: connection.name,
+                      });
                       setOpenMenuId(null);
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
@@ -316,19 +320,23 @@ export default function Trips() {
           <StatCard
             icon="📍"
             label="Total Trips"
-            value={statistics.totalTrips}
+            value={total_trips}
             details={
               <div className="space-y-4">
                 <p className="text-gray-600 mb-4">
-                  You've completed {statistics.totalTrips} amazing journeys so far!
+                  You've completed {total_trips} amazing journeys so far!
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-green-50 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-green-600">15</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {pastTrips.length}
+                    </div>
                     <div className="text-sm text-gray-600">Completed</div>
                   </div>
                   <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-blue-600">3</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {upcomingTrips.length}
+                    </div>
                     <div className="text-sm text-gray-600">Upcoming</div>
                   </div>
                 </div>
@@ -336,63 +344,21 @@ export default function Trips() {
             }
           />
           <StatCard
-            icon="🌎"
-            label="Places"
-            value={statistics.places}
-            details={
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-3">
-                  {statisticsDetails.places.map(place => (
-                    <div key={place.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <div className="font-medium">{place.name}</div>
-                        <div className="text-sm text-gray-600">{place.country}</div>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Visited: {new Date(place.visitDate).toLocaleDateString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            }
-          />
-          <StatCard
-            icon="👥"
-            label="Travel Groups"
-            value={statistics.travelGroups}
-            details={
-              <div className="space-y-4">
-                {statisticsDetails.travelGroups.map(group => (
-                  <div key={group.id} className="bg-gray-50 rounded-lg p-4">
-                    <div className="font-medium text-lg mb-2">{group.name}</div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Members: </span>
-                        <span className="font-medium">{group.members}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Trips: </span>
-                        <span className="font-medium">{group.tripCount}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            }
-          />
-          <StatCard
             icon="📅"
             label="Travel Days"
-            value={statistics.travelDays}
+            value={travel_days}
             details={
               <div className="space-y-4">
-                {statisticsDetails.travelDays.map(trip => (
+                {tripsData.map((trip: any) => (
                   <div key={trip.id} className="bg-gray-50 rounded-lg p-4">
-                    <div className="font-medium mb-2">{trip.trip}</div>
+                    <div className="font-medium mb-2">{trip.title}</div>
                     <div className="text-sm text-gray-600">
-                      <div>From: {new Date(trip.startDate).toLocaleDateString()}</div>
-                      <div>To: {new Date(trip.endDate).toLocaleDateString()}</div>
+                      <div>
+                        From: {new Date(trip.start_date).toLocaleDateString()}
+                      </div>
+                      <div>
+                        To: {new Date(trip.end_date).toLocaleDateString()}
+                      </div>
                       <div className="mt-2 font-medium text-brand-orange">
                         {trip.days} days
                       </div>
@@ -405,7 +371,7 @@ export default function Trips() {
           <StatCard
             icon="🤝"
             label="Connections"
-            value={statistics.connections}
+            value={connections}
             details={connectionDetails}
           />
         </div>
@@ -413,10 +379,10 @@ export default function Trips() {
         <section className="mb-12">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">My Upcoming Trips</h2>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="text-brand-orange flex items-center gap-1"
-              onClick={() => toggleSection('upcomingTrips')}
+              onClick={() => toggleSection("upcomingTrips")}
             >
               {expandedSections.upcomingTrips ? (
                 <>
@@ -433,25 +399,39 @@ export default function Trips() {
           </div>
           <div className="grid grid-cols-3 gap-6">
             {upcomingTrips
-              .slice(0, expandedSections.upcomingTrips ? undefined : collapsedLimits.upcomingTrips)
-              .map(trip => (
-                <UpcomingTripCard 
-                  key={trip.tripId} 
-                  trip={trip} 
-                  onViewDetails={() => handleViewDetails(trip.tripId)}
-                  onViewSummary={() => handleViewSummary(trip.tripId)}
+              .slice(
+                0,
+                expandedSections.upcomingTrips
+                  ? undefined
+                  : collapsedLimits.upcomingTrips
+              )
+              .map((trip: any) => (
+                <TripHistoryCard
+                  key={trip.id}
+                  trip={{
+                    ...trip,
+                    displayId: trip.displayId || formatTripId(trip.id),
+                  }}
+                  onViewDetails={() => handleViewDetails(trip.id)}
+                  onViewSummary={() => handleViewSummary(trip.id)}
+                  onReview={() => {}}
                 />
-            ))}
+              ))}
+            {upcomingTrips.length === 0 && (
+              <div className="col-span-3 text-center py-12 text-gray-500">
+                No upcoming trips. Plan your next adventure!
+              </div>
+            )}
           </div>
         </section>
 
         <section className="mb-12">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Travel History</h2>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="text-brand-orange flex items-center gap-1"
-              onClick={() => toggleSection('travelHistory')}
+              onClick={() => toggleSection("travelHistory")}
             >
               {expandedSections.travelHistory ? (
                 <>
@@ -467,47 +447,30 @@ export default function Trips() {
             </Button>
           </div>
           <div className="grid grid-cols-3 gap-6">
-            {travelHistory
-              .slice(0, expandedSections.travelHistory ? undefined : collapsedLimits.travelHistory)
-              .map(trip => (
+            {pastTrips
+              .slice(
+                0,
+                expandedSections.travelHistory
+                  ? undefined
+                  : collapsedLimits.travelHistory
+              )
+              .map((trip: any) => (
                 <TripHistoryCard
-                  key={trip.tripId}
-                  trip={trip}
-                  onViewDetails={handleViewDetails}
-                  onViewSummary={handleViewSummary}
-                  onReview={handleReviewTrip}
+                  key={trip.id}
+                  trip={{
+                    ...trip,
+                    displayId: trip.displayId || formatTripId(trip.id),
+                  }}
+                  onViewDetails={() => handleViewDetails(trip.id)}
+                  onViewSummary={() => handleViewSummary(trip.id)}
+                  onReview={() => handleReviewTrip(trip.id)}
                 />
-            ))}
-          </div>
-        </section>
-
-        <section className="mb-12">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">My Travel Groups</h2>
-            <Button 
-              variant="ghost" 
-              className="text-brand-orange flex items-center gap-1"
-              onClick={() => toggleSection('travelGroups')}
-            >
-              {expandedSections.travelGroups ? (
-                <>
-                  Show less
-                  <ChevronUp className="w-4 h-4" />
-                </>
-              ) : (
-                <>
-                  View all
-                  <ChevronRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
-          </div>
-          <div className="grid grid-cols-4 gap-6">
-            {travelGroups
-              .slice(0, expandedSections.travelGroups ? undefined : collapsedLimits.travelGroups)
-              .map((group, index) => (
-                <TravelGroupCard key={index} {...group} />
               ))}
+            {pastTrips.length === 0 && (
+              <div className="col-span-3 text-center py-12 text-gray-500">
+                No travel history yet. Start your travel journey!
+              </div>
+            )}
           </div>
         </section>
 
@@ -534,16 +497,30 @@ export default function Trips() {
           />
           {selectedTrip.summary && (
             <TripSummaryModal
+              highlights={selectedTrip.highlights}
+              photos={selectedTrip.image_urls}
               isOpen={isSummaryModalOpen}
               onClose={() => setIsSummaryModalOpen(false)}
-              summary={selectedTrip.summary}
+              total_days={
+                selectedTrip.start_date && selectedTrip.end_date
+                  ? Math.max(
+                      1,
+                      Math.ceil(
+                        (new Date(selectedTrip.end_date).getTime() -
+                          new Date(selectedTrip.start_date).getTime()) /
+                          (1000 * 60 * 60 * 24)
+                      ) + 1
+                    ).toString()
+                  : "0"
+              }
+              cost={selectedTrip.cost}
               tripDestination={selectedTrip.destination}
             />
           )}
           <ReviewModal
             isOpen={isReviewModalOpen}
             onClose={() => setIsReviewModalOpen(false)}
-            tripId={selectedTrip.tripId}
+            tripId={selectedTrip.id}
             onSubmit={() => setIsReviewModalOpen(false)}
           />
         </>
@@ -554,54 +531,14 @@ export default function Trips() {
         onClose={() => setShowDisconnectConfirmation(false)}
         onConfirm={confirmDisconnect}
         title="Confirm Disconnect"
-        message={selectedConnection ? `Are you sure you want to disconnect from ${selectedConnection.name}? This action cannot be undone.` : ''}
+        message={
+          selectedConnection
+            ? `Are you sure you want to disconnect from ${selectedConnection.name}? This action cannot be undone.`
+            : ""
+        }
         confirmText="Disconnect"
         type="danger"
       />
     </>
-  );
-}
-
-interface UpcomingTripCardProps {
-  trip: Trip;
-  onViewDetails: () => void;
-  onViewSummary: () => void;
-}
-
-function UpcomingTripCard({ trip, onViewDetails, onViewSummary }: UpcomingTripCardProps) {
-  return (
-    <TripHistoryCard
-      trip={trip}
-      onViewDetails={onViewDetails}
-      onViewSummary={onViewSummary}
-      onReview={() => {}}
-    />
-  );
-}
-
-function TravelGroupCard({ name, members, lastTrip, upcomingTrips, image }: {
-  name: string;
-  members: number;
-  lastTrip: string;
-  upcomingTrips: number;
-  image: string;
-}) {
-  return (
-    <div className="bg-white rounded-lg overflow-hidden">
-      <div className="h-32 relative">
-        <img src={image} alt={name} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <h3 className="absolute bottom-2 left-4 text-white font-medium">{name}</h3>
-      </div>
-      <div className="p-4">
-        <div className="text-sm text-gray-600 mb-4">
-          <div>{members} members</div>
-          <div>Last trip: {lastTrip}</div>
-        </div>
-        <div className="text-brand-orange text-sm">
-          {upcomingTrips} Upcoming {upcomingTrips === 1 ? 'trip' : 'trips'}
-        </div>
-      </div>
-    </div>
   );
 }
