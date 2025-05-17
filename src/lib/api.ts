@@ -4,10 +4,12 @@ const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
     withCredentials: true,
     headers: {
-        'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
 });
+
+// Axios will automatically set the correct Content-Type header for FormData
+// This ensures that when FormData is used, it sets multipart/form-data
 
 // Request interceptor
 api.interceptors.request.use(
@@ -80,5 +82,40 @@ const auth = {
     }
 };
 
+// Utility function to download an image from a URL
+// This can be useful if we need to convert URL images to files
+const downloadImageFromUrl = async (url: string): Promise<File | null> => {
+    try {
+        // Fetch the image data
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
 
-export { api, auth, isAuthenticated };
+        // Convert to blob
+        const blob = await response.blob();
+
+        // Extract filename from URL or use a default
+        let filename = 'image.jpg';
+        try {
+            const urlObj = new URL(url);
+            const pathname = urlObj.pathname;
+            const lastSegment = pathname.split('/').pop();
+            if (lastSegment) {
+                filename = lastSegment;
+            }
+        } catch (e) {
+            console.warn('Could not parse URL for filename:', e);
+        }
+
+        // Create a File object from the blob
+        const file = new File([blob], filename, { type: blob.type });
+        return file;
+    } catch (error) {
+        console.error('Error downloading image:', error);
+        return null;
+    }
+};
+
+
+export { api, auth, isAuthenticated, downloadImageFromUrl };
