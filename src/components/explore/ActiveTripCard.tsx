@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { MapPin, Users, Calendar, Eye } from 'lucide-react';
-import { Button } from '../ui/button';
-import { ConfirmationDialog } from '../ui/confirmation-dialog';
-import { TripSummaryModal } from '../trips/TripSummaryModal';
+import React, { useState } from "react";
+import { MapPin, Users, Calendar, Eye } from "lucide-react";
+import { Button } from "../ui/button";
+import { ConfirmationDialog } from "../ui/confirmation-dialog";
+import { TripSummaryModal } from "../trips/TripSummaryModal";
 
 interface ActiveTripCardProps {
   trip: {
@@ -10,7 +10,7 @@ interface ActiveTripCardProps {
     destination: string;
     startDate: string;
     endDate: string;
-    tripStatus: 'open' | 'full';
+    tripStatus: "open" | "full";
     totalTravelers: number;
     maxParticipants: number;
     imageUrl: string;
@@ -32,11 +32,13 @@ export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
 
   const duration = Math.ceil(
     (new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) /
-    (1000 * 60 * 60 * 24)
+      (1000 * 60 * 60 * 24)
   );
 
   const isJoinable = () => {
-    return trip.tripStatus === 'open' && trip.totalTravelers < trip.maxParticipants;
+    return (
+      trip.tripStatus === "open" && trip.totalTravelers < trip.maxParticipants
+    );
   };
 
   const handleJoinClick = () => {
@@ -60,16 +62,16 @@ export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
   };
 
   const getButtonText = () => {
-    if (isRequested) return 'Cancel Request';
-    if (!isJoinable()) return 'Trip Full';
-    return 'Request to Join';
+    if (isRequested) return "Cancel Request";
+    if (!isJoinable()) return "Trip Full";
+    return "Request to Join";
   };
 
   const getButtonStyle = () => {
     if (isRequested) {
-      return 'hover:bg-red-50 hover:text-red-600 hover:border-red-200';
+      return "hover:bg-red-50 hover:text-red-600 hover:border-red-200";
     }
-    return '';
+    return "";
   };
 
   return (
@@ -85,11 +87,11 @@ export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
             <span
               className={`px-3 py-1 rounded-full text-sm font-medium ${
                 isJoinable()
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
               }`}
             >
-              {isJoinable() ? 'Open' : 'Full'}
+              {isJoinable() ? "Open" : "Full"}
             </span>
           </div>
         </div>
@@ -100,15 +102,20 @@ export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
           <div className="space-y-2 mb-4">
             <div className="flex items-center gap-2 text-gray-600">
               <MapPin className="w-4 h-4" />
-              <span>Trip ID: {trip.tripId}</span>
+              <span>Trip ID: T{trip.tripId.slice(0, 6).toUpperCase()}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Calendar className="w-4 h-4" />
-              <span>{new Date(trip.startDate).toLocaleDateString()} • {duration} days</span>
+              <span>
+                {new Date(trip.startDate).toLocaleDateString()} • {duration}{" "}
+                days
+              </span>
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Users className="w-4 h-4" />
-              <span>{trip.totalTravelers}/{trip.maxParticipants} participants</span>
+              <span>
+                {trip.totalTravelers}/{trip.maxParticipants} participants
+              </span>
             </div>
           </div>
 
@@ -128,7 +135,7 @@ export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
           <Button
             onClick={handleJoinClick}
             disabled={!isJoinable() && !isRequested}
-            variant={isRequested ? 'outline' : 'default'}
+            variant={isRequested ? "outline" : "default"}
             className={`w-full ${getButtonStyle()}`}
           >
             {getButtonText()}

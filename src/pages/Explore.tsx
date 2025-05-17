@@ -344,7 +344,7 @@ const fetchTrips = async () => {
       imageUrl:
         typeof trip.cover_image_url === "string"
           ? trip.cover_image_url
-          : "https://via.placeholder.com/300",
+          : "/placeholders/trip.png",
       summary: trip.description,
     }));
 
