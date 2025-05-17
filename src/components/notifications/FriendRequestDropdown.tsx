@@ -1,16 +1,16 @@
-import React from "react";
-import { Check, X, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
+import { api } from "../../lib/api";
 interface FriendRequest {
   id: string;
-  user: {
-    name: string;
-    image: string;
-    location: string;
-    mutualFriends: number;
-    timestamp: string;
-  };
+  status: string;
+  created_at: string;
+  updated_at: string;
+  sender_id: string;
+  username: string;
+  avatar_url: string;
+  name: string;
+  location: string;
 }
 
 interface FriendRequestDropdownProps {
@@ -18,53 +18,57 @@ interface FriendRequestDropdownProps {
   onClose: () => void;
 }
 
-const requests: FriendRequest[] = [
-  {
-    id: "1",
-    user: {
-      name: "Alex Thompson",
-      image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde",
-      location: "London, UK",
-      mutualFriends: 5,
-      timestamp: "2 hours ago",
-    },
-  },
-  {
-    id: "2",
-    user: {
-      name: "Sarah Wilson",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
-      location: "Sydney, Australia",
-      mutualFriends: 3,
-      timestamp: "5 hours ago",
-    },
-  },
-  {
-    id: "3",
-    user: {
-      name: "Mike Chen",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e",
-      location: "Toronto, Canada",
-      mutualFriends: 8,
-      timestamp: "1 day ago",
-    },
-  },
-];
-
 export function FriendRequestDropdown({
   isOpen,
   onClose,
 }: FriendRequestDropdownProps) {
+  const [requests, setRequests] = useState<FriendRequest[]>([]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    api
+      .get<{ data: FriendRequest[] }>(`/friendships/received_requests`)
+      .then((res) => {
+        const data = res.data.data.map((item) => ({
+          id: item.id,
+          status: item.status,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          sender_id: item.sender_id,
+          username: item.username,
+          avatar_url: item.avatar_url,
+          name: item.name,
+          location: item.location,
+        }));
+        setRequests(data);
+      });
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const handleAccept = (requestId: string) => {
-    console.log("Accepting request:", requestId);
-    // Add accept logic here
+  const handleAccept = async (username: string) => {
+    const previousRequests = [...requests];
+    setRequests((prev) => prev.filter((r) => r.username !== username));
+
+    try {
+      await api.post(`/friendships/${username}/accept`);
+    } catch {
+      console.error("Accept failed. Rolling back.");
+      setRequests(previousRequests);
+    }
   };
 
-  const handleReject = (requestId: string) => {
-    console.log("Rejecting request:", requestId);
-    // Add reject logic here
+  const handleReject = async (username: string) => {
+    const previousRequests = [...requests];
+    setRequests((prev) => prev.filter((r) => r.username !== username));
+
+    try {
+      await api.delete(`/friendships/${username}`);
+    } catch {
+      console.error("Reject failed. Rolling back.");
+      setRequests(previousRequests);
+    }
   };
 
   return (
@@ -86,33 +90,52 @@ export function FriendRequestDropdown({
           >
             <div className="flex items-start gap-3">
               <img
-                src={request.user.image}
-                alt={request.user.name}
+                src={request.avatar_url}
+                alt={request.name}
                 className="w-12 h-12 rounded-full object-cover"
               />
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium">{request.user.name}</h4>
+                  <h4 className="font-medium">{request.name}</h4>
                   <span className="text-xs text-gray-500">
-                    {request.user.timestamp}
+                    {(() => {
+                      const createdAt = new Date(request.created_at);
+                      const now = new Date();
+                      const diffMs = now.getTime() - createdAt.getTime();
+                      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                      const diffDays = Math.floor(
+                        diffMs / (1000 * 60 * 60 * 24)
+                      );
+                      const diffYears =
+                        now.getFullYear() - createdAt.getFullYear();
+
+                      if (diffYears > 0) {
+                        return `${diffYears} year${
+                          diffYears > 1 ? "s" : ""
+                        } ago`;
+                      } else if (diffDays > 0) {
+                        return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+                      } else if (diffHours > 0) {
+                        return `${diffHours} hour${
+                          diffHours > 1 ? "s" : ""
+                        } ago`;
+                      } else {
+                        return "Just now";
+                      }
+                    })()}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mb-1">
-                  {request.user.location}
-                </p>
-                <p className="text-xs text-gray-500 flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  {request.user.mutualFriends} mutual connections
-                </p>
+                <p className="text-sm text-gray-600 mb-1">{request.location}</p>
+
                 <div className="flex gap-2 mt-2">
                   <button
-                    onClick={() => handleAccept(request.id)}
+                    onClick={() => handleAccept(request.username)}
                     className="flex-1 bg-brand-orange text-white px-3 py-1 rounded-full text-sm hover:bg-brand-orange/90 transition-colors"
                   >
                     Accept
                   </button>
                   <button
-                    onClick={() => handleReject(request.id)}
+                    onClick={() => handleReject(request.username)}
                     className="flex-1 border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-50 transition-colors"
                   >
                     Reject
