@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios'; // fix for undefined `api`
+
 import { ExploreSearch } from '../components/explore/ExploreSearch';
 import { FilterChips } from '../components/explore/FilterChips';
 import { TravelerCard } from '../components/explore/TravelerCard';
 import { ActiveTripCard } from '../components/explore/ActiveTripCard';
 import { DestinationDetailModal, Destination } from '../components/explore/DestinationDetailModal';
 import { ConfirmationDialog } from '../components/ui/confirmation-dialog';
-import { activeTrips } from '../data/activetrips';
+import { api } from '../lib/api';
 
 type TabType = 'destinations' | 'travelers' | 'trips';
 
@@ -40,13 +42,11 @@ export default function Explore() {
 
   const handleViewDestinationDetails = (destination: Destination) => {
     setSelectedDestination(destination);
-    // Disable body scroll when modal is open
     document.body.style.overflow = 'hidden';
   };
 
   const handleCloseModal = () => {
     setSelectedDestination(null);
-    // Re-enable body scroll when modal is closed
     document.body.style.overflow = 'unset';
   };
 
@@ -72,12 +72,10 @@ export default function Explore() {
               setActiveTab(tab.id);
               setActiveFilter('');
             }}
-            className={`
-              px-6 py-3 font-medium text-sm relative whitespace-nowrap
+            className={`px-6 py-3 font-medium text-sm relative whitespace-nowrap
               ${activeTab === tab.id
                 ? 'text-brand-orange'
-                : 'text-gray-600 hover:text-gray-900'
-              }
+                : 'text-gray-600 hover:text-gray-900'}
             `}
           >
             {tab.label}
@@ -96,7 +94,9 @@ export default function Explore() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {activeTab === 'destinations' && <DestinationsList filter={activeFilter} onViewDetails={handleViewDestinationDetails} />}
+        {activeTab === 'destinations' && (
+          <DestinationsList filter={activeFilter} onViewDetails={handleViewDestinationDetails} />
+        )}
         {activeTab === 'travelers' && <TravelersList filter={activeFilter} />}
         {activeTab === 'trips' && <ActiveTripsList filter={activeFilter} />}
       </div>
@@ -106,7 +106,6 @@ export default function Explore() {
           isOpen={!!selectedDestination}
           onClose={handleCloseModal}
           destination={selectedDestination}
-          onPlanTrip={handlePlanTrip}
         />
       )}
 
@@ -126,90 +125,69 @@ export default function Explore() {
   );
 }
 
+const fetchDestinations = async (): Promise<Destination[]> => {
+  try {
+    const res = await api.get("/destinations");
+    const data = res.data.data;
+    // console.log(res.data);
+
+    const destinations: Destination[] = data.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      image: item.cover_image_url,
+      location: item.location,
+      rating: item.rating,
+      description: item.description,
+      popularity: item.popularity,
+      difficulty: item.difficulty,
+      bestTimeToVisit: item.best_time_to_visit,
+      activities: item.activities || [],
+      highlights: item.highlights || [],
+      averageCost: item.average_cost,
+      travelTips: item.travel_tips || [],
+    }));
+
+    return destinations;
+  } catch (error) {
+    console.error("Failed to fetch destinations:", error);
+    return [];
+  }
+};
+
+const fetchTravelers = async () => {
+  try {
+    const res = await api.get("/users?all=true");
+    const data = res.data.data;
+
+    const travelers = data.map((user: any) => ({
+      id: user.username,
+      name: user.name ,
+      image: user.profile_image || 'https://via.placeholder.com/150',
+      location: user.location || 'Unknown',
+      mutualConnections: user.connections || 0,
+      interests: user.interests || [],
+      isOnline: false,  // You can improve this if you have online status
+      lastActive: 'Recently', // No info in API, default
+      connectionStatus: user.friendship_status || 'none'
+    }));
+
+    return travelers;
+  } catch (error) {
+    console.error("Failed to fetch travelers:", error);
+    return [];
+  }
+};
+
 function DestinationsList({ filter, onViewDetails }: { filter: string, onViewDetails: (destination: Destination) => void }) {
-  const destinations: Destination[] = [
-    {
-      id: '1',
-      name: 'Everest Base Camp',
-      image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa',
-      location: 'Solukhumbu, Nepal',
-      rating: 4.8,
-      description: "The ultimate trekking destination with breathtaking views of the world's highest peak. The journey to Everest Base Camp takes you through stunning Sherpa villages, ancient monasteries, and dramatic mountain landscapes. This iconic trek offers a perfect blend of natural beauty, cultural immersion, and personal challenge.",
-      popularity: 'High',
-      difficulty: 'Challenging',
-      bestTimeToVisit: 'March-May and September-November',
-      activities: ['Trekking', 'Photography', 'Cultural Exploration', 'Mountain Viewing'],
-      highlights: [
-        'Panoramic views of Mount Everest and surrounding peaks',
-        'Visit to Tengboche Monastery',
-        'Sherpa culture and hospitality',
-        'Stunning sunrise from Kala Patthar',
-        'Crossing suspension bridges over deep gorges'
-      ],
-      averageCost: '$1,500 - $3,000 USD (excluding flights)',
-      travelTips: [
-        'Acclimatize properly to avoid altitude sickness',
-        'Pack layers for varying temperatures',
-        'Train physically before the trek',
-        'Bring a good camera for spectacular photos',
-        'Respect local customs and traditions'
-      ]
-    },
-    {
-      id: '2',
-      name: 'Annapurna Circuit',
-      image: 'https://images.unsplash.com/photo-1585938389612-a552a28d6914',
-      location: 'Annapurna Region, Nepal',
-      rating: 4.7,
-      description: "A classic trek that circles the entire Annapurna massif, offering incredible diversity in landscapes, cultures, and ecosystems. From subtropical forests to arid high-altitude deserts, this trek takes you through some of the most beautiful mountain scenery in the world, including the challenging Thorong La Pass at 5,416m.",
-      popularity: 'High',
-      difficulty: 'Moderate',
-      bestTimeToVisit: 'October-November and March-April',
-      activities: ['Trekking', 'Hot Springs', 'Cultural Immersion', 'Wildlife Spotting'],
-      highlights: [
-        'Crossing the challenging Thorong La Pass (5,416m)',
-        'Diverse landscapes from jungles to alpine zones',
-        'Muktinath Temple - sacred to both Hindus and Buddhists',
-        'Stunning views of Annapurna and Dhaulagiri ranges',
-        'Traditional villages of various ethnic groups'
-      ],
-      averageCost: '$1,200 - $2,500 USD (excluding flights)',
-      travelTips: [
-        'Get a TIMS card and ACAP permit before starting',
-        'Consider hiring a local guide for cultural insights',
-        'Bring water purification tablets to reduce plastic waste',
-        'Pack microspikes if trekking during shoulder seasons',
-        'Try local apple products in Marpha village'
-      ]
-    },
-    {
-      id: '3',
-      name: 'Pokhara',
-      image: 'https://images.unsplash.com/photo-1605640840605-14ac1855827b',
-      location: 'Gandaki Province, Nepal',
-      rating: 4.9,
-      description: "A beautiful lakeside city with stunning views of the Annapurna range. Known as the gateway to the Annapurna Circuit, Pokhara offers a perfect blend of adventure and relaxation. With its tranquil lakes, adventure activities, and vibrant restaurant scene, it's the ideal place to prepare for or recover from Himalayan treks.",
-      popularity: 'High',
-      difficulty: 'Easy',
-      bestTimeToVisit: 'September-November and February-April',
-      activities: ['Boating', 'Paragliding', 'Hiking', 'Yoga', 'Meditation'],
-      highlights: [
-        'Boating on serene Phewa Lake',
-        'Sunrise views from Sarangkot',
-        'Paragliding with mountain views',
-        'Peace Pagoda (Shanti Stupa)',
-        "Devi's Falls and Gupteshwor Cave"
-      ],
-      averageCost: '$30 - $100 USD per day',
-      travelTips: [
-        'Book paragliding in advance during peak season',
-        'Visit early morning for the clearest mountain views',
-        'Try local Newari cuisine',
-        'Rent a bicycle to explore the lakeside area',
-        'Take a day trip to nearby Begnas or Rupa Lake for a quieter experience'
-      ]
-    }
-  ];
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+
+  useEffect(() => {
+    const loadDestinations = async () => {
+      const fetched = await fetchDestinations();
+      setDestinations(fetched);
+    };
+    loadDestinations();
+  }, []);
 
   return (
     <>
@@ -231,7 +209,7 @@ function DestinationsList({ filter, onViewDetails }: { filter: string, onViewDet
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-map-pin"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
               <span>{destination.location}</span>
             </div>
-            <div className="flex items-center gap-1 mb-3">
+            <div className="flex items-center gap-1 mb-3"> 
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-star fill-yellow-400 text-yellow-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               <span className="font-medium">{destination.rating}</span>
             </div>
@@ -250,71 +228,95 @@ function DestinationsList({ filter, onViewDetails }: { filter: string, onViewDet
 }
 
 function TravelersList({ filter }: { filter: string }) {
-  const travelers = [
-    {
-      id: '1',
-      name: 'Sarah Chen',
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
-      location: 'San Francisco, CA',
-      mutualConnections: 12,
-      interests: ['Hiking', 'Photography', 'Culture'],
-      isOnline: true,
-      lastActive: '2 hours ago',
-      connectionStatus: 'none'
-    },
-    {
-      id: '2',
-      name: 'Mike Johnson',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
-      location: 'London, UK',
-      mutualConnections: 8,
-      interests: ['Adventure', 'Food', 'History'],
-      isOnline: false,
-      lastActive: '1 day ago',
-      connectionStatus: 'requested'
-    },
-    {
-      id: '3',
-      name: 'Emma Wilson',
-      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb',
-      location: 'Sydney, Australia',
-      mutualConnections: 5,
-      interests: ['Yoga', 'Beaches', 'Meditation'],
-      isOnline: true,
-      lastActive: 'Just now',
-      connectionStatus: 'connected'
+  const [travelers, setTravelers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadTravelers = async () => {
+      const fetched = await fetchTravelers();
+      setTravelers(fetched);
+    };
+    loadTravelers();
+  }, []);
+
+  const handleStatusChange = async (id: string, newStatus: "none" | "sent" | "received" | "friends") => {
+    try {
+      if (newStatus === "sent") {
+        // Send friend request
+        await api.post(`/friendships/${id}`);
+      } else if (newStatus === "none") {
+        // Cancel or remove friendship
+        await api.delete(`/friendships/${id}`);
+      } else if (newStatus === "friends") {
+        // Accept friend request (example)
+        await api.post(`/friendships/${id}/accept`);
+      }
+      // Update state locally after success
+      setTravelers(prev =>
+        prev.map(t => (t.id === id ? { ...t, connectionStatus: newStatus } : t))
+      );
+    } catch (err) {
+      console.error("Failed to update friendship status:", err);
     }
-  ];
+  };
 
   return (
     <>
       {travelers.map((traveler) => (
-        <TravelerCard key={traveler.id} traveler={traveler} />
+        <TravelerCard
+          key={traveler.id}
+          traveler={traveler}
+          onStatusChange={handleStatusChange}
+        />
       ))}
     </>
   );
 }
 
+const fetchTrips = async () => {
+  try {
+    const res = await api.get("/trips");
+    const data = res.data.data;
+
+    const trips = data.map((trip: any) => ({
+      tripId: trip.id,
+      destination: trip.title,
+      startDate: trip.start_date,
+      endDate: trip.end_date,
+      tripStatus: 'open',
+      totalTravelers: trip.members_count || 0,
+      maxParticipants: trip.maximum_participants,
+      imageUrl: typeof trip.cover_image_url === 'string' ? trip.cover_image_url : 'https://via.placeholder.com/300',
+      summary: trip.description,
+    }));
+
+    return trips;
+  } catch (error) {
+    console.error("Failed to fetch trips:", error);
+    return [];
+  }
+};
+
 function ActiveTripsList({ filter }: { filter: string }) {
+  const [trips, setTrips] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadTrips = async () => {
+      const fetched = await fetchTrips();
+      setTrips(fetched);
+    };
+    loadTrips();
+  }, []);
+
   return (
     <>
-      {activeTrips.map((trip) => (
+      {trips.map((trip) => (
         <ActiveTripCard
           key={trip.tripId}
-          trip={{
-            tripId: trip.tripId,
-            destination: trip.destination,
-            startDate: trip.startDate,
-            endDate: trip.endDate,
-            tripStatus: trip.tripStatus || 'open', // fallback if undefined
-            totalTravelers: trip.totalTravelers || 0,
-            maxParticipants: trip.maxParticipants || 12,
-            imageUrl: trip.imageUrl || '',
-            summary: trip.summary,
-          }}
+          trip={trip}
           onJoinRequest={(id) => console.log('Join request:', id)}
         />
       ))}
     </>
   );
 }
+

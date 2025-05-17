@@ -5,7 +5,6 @@ import { Button } from "../ui/button";
 import { FormInput } from "./FormInput";
 import { RegisterFormState } from "./types";
 import { auth } from "../../lib/api";
-
 export function RegisterForm() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<RegisterFormState>({
@@ -133,14 +132,14 @@ export function RegisterForm() {
         >
           I agree to the{" "}
           <Link
-            to="/terms"
+            to="/termspage"
             className="text-brand-orange hover:text-brand-orange/90"
           >
             Terms of Service
           </Link>{" "}
           and{" "}
           <Link
-            to="/privacy"
+            to="/privacypage"
             className="text-brand-orange hover:text-brand-orange/90"
           >
             Privacy Policy

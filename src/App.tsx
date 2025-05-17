@@ -15,6 +15,8 @@ import { useAuth } from "./context/authContext";
 import { useContext, useEffect } from "react";
 import Feed from "./pages/Feed";
 import { UserContext } from "./context/UserContext";
+import TermsPage from "./pages/Termspage";
+import PrivacyPage from "./pages/PrivacyPage";
 
 function App() {
   const location = useLocation();
@@ -49,7 +51,19 @@ function App() {
               !authenticated ? <Register /> : <Navigate to="/" replace />
             }
           />
-
+           <Route
+            path="/termspage"
+            element={
+              <TermsPage />
+            }
+          />
+          <Route
+            path="/privacypage"
+            element={
+              <PrivacyPage />
+            }
+          />
+          
           {/* Protected routes */}
           <Route
             path="/messages"
