@@ -144,8 +144,8 @@ export function StoryRow() {
           setViewerOpen(false);
           setActiveUserStory(null);
         }}
-        userStory={activeUserStory || undefined}
-        userId={activeUserStory?.id}
+        userStories={userStories}
+        initialUserId={activeUserStory?.id}
       />
     </div>
   );
