@@ -221,7 +221,7 @@ export default function Trips() {
     const trip = tripsData.find(
       (t: any) => t.trip_id === tripId || t.id === tripId
     );
-    if (trip && trip.summary) {
+    if (trip) {
       setSelectedTrip(trip);
       setIsSummaryModalOpen(true);
     }
@@ -241,11 +241,13 @@ export default function Trips() {
 
   // Filter trips into upcoming and past trips
   const currentDate = new Date();
+  // Upcoming: trips that are ongoing or start in the future (end_date >= today)
   const upcomingTrips = tripsData.filter(
-    (trip: any) => new Date(trip.start_date) > currentDate
+    (trip: any) => new Date(trip.end_date) >= currentDate
   );
+  // Past: trips that ended before today (end_date < today)
   const pastTrips = tripsData.filter(
-    (trip: any) => new Date(trip.end_date) <= currentDate
+    (trip: any) => new Date(trip.end_date) < currentDate
   );
 
   const connectionDetails = (
@@ -401,44 +403,42 @@ export default function Trips() {
         <section className="mb-12">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">My Upcoming Trips</h2>
-            <Button
-              variant="ghost"
-              className="text-brand-orange flex items-center gap-1"
-              onClick={() => toggleSection("upcomingTrips")}
-            >
-              {expandedSections.upcomingTrips ? (
-                <>
-                  Show less
-                  <ChevronUp className="w-4 h-4" />
-                </>
-              ) : (
-                <>
-                  View all
-                  <ChevronRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
+            {upcomingTrips.length > collapsedLimits.upcomingTrips && (
+              <Button
+                variant="ghost"
+                className="text-brand-orange flex items-center gap-1"
+                onClick={() => toggleSection("upcomingTrips")}
+              >
+                {expandedSections.upcomingTrips ? (
+                  <>
+                    Show less
+                    <ChevronUp className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    View all
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
+              </Button>
+            )}
           </div>
           <div className="grid grid-cols-3 gap-6">
-            {upcomingTrips
-              .slice(
-                0,
-                expandedSections.upcomingTrips
-                  ? undefined
-                  : collapsedLimits.upcomingTrips
-              )
-              .map((trip: any) => (
-                <TripHistoryCard
-                  key={trip.id}
-                  trip={{
-                    ...trip,
-                    displayId: trip.displayId || formatTripId(trip.id),
-                  }}
-                  onViewDetails={() => handleViewDetails(trip.id)}
-                  onViewSummary={() => handleViewSummary(trip.id)}
-                  onReview={() => {}}
-                />
-              ))}
+            {(expandedSections.upcomingTrips
+              ? upcomingTrips
+              : upcomingTrips.slice(0, collapsedLimits.upcomingTrips)
+            ).map((trip: any) => (
+              <TripHistoryCard
+                key={trip.id}
+                trip={{
+                  ...trip,
+                  displayId: trip.displayId || formatTripId(trip.id),
+                }}
+                onViewDetails={() => handleViewDetails(trip.id)}
+                onViewSummary={() => handleViewSummary(trip.id)}
+                onReview={() => {}}
+              />
+            ))}
             {upcomingTrips.length === 0 && (
               <div className="col-span-3 text-center py-12 text-gray-500">
                 No upcoming trips. Plan your next adventure!
@@ -469,25 +469,21 @@ export default function Trips() {
             </Button>
           </div>
           <div className="grid grid-cols-3 gap-6">
-            {pastTrips
-              .slice(
-                0,
-                expandedSections.travelHistory
-                  ? undefined
-                  : collapsedLimits.travelHistory
-              )
-              .map((trip: any) => (
-                <TripHistoryCard
-                  key={trip.id}
-                  trip={{
-                    ...trip,
-                    displayId: trip.displayId || formatTripId(trip.id),
-                  }}
-                  onViewDetails={() => handleViewDetails(trip.id)}
-                  onViewSummary={() => handleViewSummary(trip.id)}
-                  onReview={() => handleReviewTrip(trip.id)}
-                />
-              ))}
+            {(expandedSections.travelHistory
+              ? pastTrips
+              : pastTrips.slice(0, collapsedLimits.travelHistory)
+            ).map((trip: any) => (
+              <TripHistoryCard
+                key={trip.id}
+                trip={{
+                  ...trip,
+                  displayId: trip.displayId || formatTripId(trip.id),
+                }}
+                onViewDetails={() => handleViewDetails(trip.id)}
+                onViewSummary={() => handleViewSummary(trip.id)}
+                onReview={() => handleReviewTrip(trip.id)}
+              />
+            ))}
             {pastTrips.length === 0 && (
               <div className="col-span-3 text-center py-12 text-gray-500">
                 No travel history yet. Start your travel journey!
@@ -532,10 +528,10 @@ export default function Trips() {
                           new Date(selectedTrip.start_date).getTime()) /
                           (1000 * 60 * 60 * 24)
                       ) + 1
-                    ).toString()
-                  : "0"
+                    )
+                  : 0
               }
-              cost={selectedTrip.cost}
+              total_cost={selectedTrip.cost}
               tripDestination={selectedTrip.destination}
             />
           )}

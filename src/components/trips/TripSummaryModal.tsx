@@ -86,12 +86,10 @@ export function TripSummaryModal({
             </div>
             <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
               <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-brand-orange flex-shrink-0" />
-              <div>
+              <div className="flex flex-col items-start w-full">
                 <p className="text-xs sm:text-sm text-gray-500">Total Cost</p>
-                <p className="font-medium text-sm sm:text-base">
-                  {total_cost && total_cost > 0
-                    ? `${total_cost}`
-                    : "Cost not specified"}
+                <p className="font-medium text-sm sm:text-base break-words text-left w-full  max-w-[180px] sm:max-w-[240px]">
+                  {total_cost === 0 ? "Cost not specified" : `${total_cost}`}
                 </p>
               </div>
             </div>
