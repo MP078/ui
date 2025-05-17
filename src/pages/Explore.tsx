@@ -10,6 +10,7 @@ import {
 } from "../components/explore/DestinationDetailModal";
 import { ConfirmationDialog } from "../components/ui/confirmation-dialog";
 import { api } from "../lib/api";
+import { getAvatarNumber } from "../context/UserContext";
 
 type TabType = "destinations" | "travelers" | "trips";
 
@@ -168,7 +169,7 @@ const fetchTravelers = async () => {
     const travelers = data.map((user: any) => ({
       id: user.username,
       name: user.name,
-      image: user.profile_image || "https://via.placeholder.com/150",
+      image: user.profile_image || `/avatars/${getAvatarNumber(user.id)}.png`,
       location: user.location || "Unknown",
       mutualConnections: user.connections || 0,
       interests: user.interests || [],
@@ -315,6 +316,12 @@ function TravelersList({ filter }: { filter: string }) {
           key={traveler.id}
           traveler={traveler}
           onStatusChange={handleStatusChange}
+          username={traveler.username}
+          id={traveler.id}
+          image={traveler.image}
+          name={traveler.name}
+          location={traveler.location}
+          connectionStatus={traveler.connectionStatus}
         />
       ))}
     </>
