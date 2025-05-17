@@ -63,7 +63,7 @@ export default function SuggestedBuddies() {
   return (
     <div className="bg-white rounded-lg p-4 mt-4">
       <h3 className="font-semibold mb-4">Suggested Travel Buddies</h3>
-      {buddies.map((buddy) => (
+      {buddies.slice(0, 3).map((buddy) => (
         <div key={buddy.id} className="flex items-center justify-between mb-4">
           <Link to={buddy.username}>
             <div className="flex items-center gap-3">
