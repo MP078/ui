@@ -1,37 +1,113 @@
-import React, { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
-import { StoryCircle } from './StoryCircle';
-import { AddStoryModal } from './AddStoryModal';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { stories } from '../../data/stories';
+import { useState, useEffect, useCallback } from "react";
+import { ChevronRight } from "lucide-react";
+import { StoryCircle } from "./StoryCircle";
+import { AddStoryModal } from "./AddStoryModal";
+import { useNavigate, useLocation } from "react-router-dom";
+import { api } from "../../lib/api";
+import { getAvatarNumber } from "../../context/UserContext";
+
+// Define a type for normalized story
+interface UserStory {
+  id: string;
+  name: string;
+  image: string;
+  stories: Array<{
+    id: string;
+    image: string;
+    caption?: string;
+    location?: string;
+    music?: { title: string; artist: string };
+    duration?: number;
+  }>;
+}
+
+// Type for Add Story button
+interface AddStory {
+  id: "add";
+  name: string;
+  image: string;
+  isAdd: true;
+}
+
+type StoryRowItem =
+  | AddStory
+  | { id: string | number; name: string; image: string };
 
 export function StoryRow() {
   const [isAddStoryModalOpen, setIsAddStoryModalOpen] = useState(false);
+  const [userStories, setUserStories] = useState<UserStory[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleStoryClick = (story: typeof stories[0] | { id: 'add', isAdd: true }) => {
-    if ('isAdd' in story) {
+  // Fetch stories from backend
+  // Define types for API response inline
+  interface APIUser {
+    id: string;
+    name: string;
+    avatar_url?: string | false;
+  }
+  interface APIStory {
+    id: string | number;
+    image_url?: string;
+    caption?: string;
+    location?: string;
+    music?: { title: string; artist: string };
+  }
+  const fetchStories = useCallback(async () => {
+    try {
+      const res = await api.get("/stories");
+      const normalized: UserStory[] = (res.data || []).map(
+        (entry: { user: APIUser; stories: APIStory[] }) => ({
+          id: entry.user.id,
+          name: entry.user.name,
+          image:
+            typeof entry.user.avatar_url === "string" && entry.user.avatar_url
+              ? entry.user.avatar_url
+              : `/avatars/${getAvatarNumber(entry.user.id.toString())}.png`, // fallback to local avatar if falsey
+          stories: (entry.stories || []).map((story) => ({
+            id: story.id,
+            image: story.image_url || "",
+            caption: story.caption,
+            location: story.location,
+            music: story.music,
+            duration: 5000,
+          })),
+        })
+      );
+      setUserStories(normalized);
+    } catch {
+      setUserStories([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStories();
+  }, [fetchStories]);
+
+  const handleStoryClick = (story: StoryRowItem) => {
+    if ("isAdd" in story && story.isAdd) {
       setIsAddStoryModalOpen(true);
     } else {
       navigate(`/stories/${story.id}`, {
-        state: { backgroundLocation: location }
+        state: { backgroundLocation: location },
       });
     }
   };
 
-  const handleAddStory = (file: File) => {
-    console.log('Uploading story:', file);
+  // After successful upload, refetch stories
+  const handleAddStory = () => {
     setIsAddStoryModalOpen(false);
+    fetchStories();
   };
 
-  const allStories = [
-    { id: 'add', name: 'Add Story', image: '', isAdd: true as const },
-    ...stories.map(story => ({
-      id: story.id,
-      name: story.user.name,
-      image: story.user.image
-    }))
+  // Compose all stories for the row (add button + user stories)
+  const allStories: StoryRowItem[] = [
+    { id: "add", name: "Add Story", image: "", isAdd: true },
+    ...userStories.map((user) => ({
+      id: user.id,
+      name: user.name,
+      image: user.image,
+    })),
   ];
 
   return (
@@ -43,7 +119,7 @@ export function StoryRow() {
               key={story.id}
               image={story.image}
               name={story.name}
-              isAdd={'isAdd' in story}
+              isAdd={"isAdd" in story && story.isAdd}
               onClick={() => handleStoryClick(story)}
             />
           ))}

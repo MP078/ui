@@ -1,6 +1,15 @@
-import React, { useState, useRef } from 'react';
-import { X, Image as ImageIcon, Camera, Music2, MapPin, Smile, Text, Clock, Share2 } from 'lucide-react';
-import { Button } from '../ui/button';
+import React, { useState, useRef } from "react";
+import {
+  X,
+  Image as ImageIcon,
+  Camera,
+  Music2,
+  MapPin,
+  Text,
+  Share2,
+} from "lucide-react";
+import { Button } from "../ui/button";
+import { api } from "../../lib/api";
 
 interface AddStoryModalProps {
   isOpen: boolean;
@@ -10,7 +19,7 @@ interface AddStoryModalProps {
 
 interface StoryData {
   file: File;
-  type: 'image' | 'video';
+  type: "image" | "video";
   caption?: string;
   location?: string;
   music?: {
@@ -19,29 +28,33 @@ interface StoryData {
   };
   duration?: number;
   shareToFeed?: boolean;
-  visibility?: 'public' | 'friends' | 'close-friends';
+  visibility?: "public" | "friends" | "close-friends";
 }
 
 const musicOptions = [
-  { title: 'Mountain Vibes', artist: 'Nature Sounds' },
-  { title: 'Travel Dreams', artist: 'Wanderlust' },
-  { title: 'Adventure Awaits', artist: 'Journey' },
+  { title: "Mountain Vibes", artist: "Nature Sounds" },
+  { title: "Travel Dreams", artist: "Wanderlust" },
+  { title: "Adventure Awaits", artist: "Journey" },
 ];
 
 const visibilityOptions = [
-  { value: 'public', label: 'Everyone' },
-  { value: 'friends', label: 'Friends' },
-  { value: 'close-friends', label: 'Close Friends' },
+  { value: "public", label: "Everyone" },
+  { value: "friends", label: "Friends" },
+  { value: "close-friends", label: "Close Friends" },
 ];
 
-export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps) {
+export function AddStoryModal({
+  isOpen,
+  onClose,
+  onSubmit,
+}: AddStoryModalProps) {
   const [storyData, setStoryData] = useState<StoryData>({
     file: null as unknown as File,
-    type: 'image',
-    caption: '',
+    type: "image",
+    caption: "",
     duration: 5000,
-    visibility: 'public',
-    shareToFeed: false
+    visibility: "public",
+    shareToFeed: false,
   });
   const [preview, setPreview] = useState<string | null>(null);
   const [showMusicSelector, setShowMusicSelector] = useState(false);
@@ -50,7 +63,7 @@ export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps)
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setStoryData(prev => ({ ...prev, file }));
+      setStoryData((prev) => ({ ...prev, file }));
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
@@ -59,21 +72,32 @@ export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps)
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (storyData.file) {
-      onSubmit(storyData);
-      onClose();
+      // Prepare FormData for Rails API
+      const formData = new FormData();
+      formData.append("image", storyData.file);
+      if (storyData.caption) formData.append("caption", storyData.caption);
+      if (storyData.location) formData.append("location", storyData.location);
+      try {
+        await api.post("/stories", formData);
+        onSubmit(storyData); // Optionally pass back the storyData
+        // onClose();
+      } catch (e) {
+        alert("Failed to upload story." + e);
+        // onClose();
+      }
     }
   };
 
   const resetForm = () => {
     setStoryData({
       file: null as unknown as File,
-      type: 'image',
-      caption: '',
+      type: "image",
+      caption: "",
       duration: 5000,
-      visibility: 'public',
-      shareToFeed: false
+      visibility: "public",
+      shareToFeed: false,
     });
     setPreview(null);
     setShowMusicSelector(false);
@@ -107,7 +131,10 @@ export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps)
               />
               <button
                 onClick={() => {
-                  setStoryData(prev => ({ ...prev, file: null as unknown as File }));
+                  setStoryData((prev) => ({
+                    ...prev,
+                    file: null as unknown as File,
+                  }));
                   setPreview(null);
                 }}
                 className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white hover:bg-black/60 transition-colors"
@@ -121,7 +148,9 @@ export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps)
               className="aspect-[9/16] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-brand-orange transition-colors mb-4 bg-gray-50"
             >
               <ImageIcon className="w-10 h-10 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 font-medium">Add to your story</p>
+              <p className="text-sm text-gray-600 font-medium">
+                Add to your story
+              </p>
               <p className="text-xs text-gray-500">or drag and drop</p>
             </div>
           )}
@@ -143,7 +172,9 @@ export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps)
                 type="text"
                 placeholder="Add a caption..."
                 value={storyData.caption}
-                onChange={(e) => setStoryData(prev => ({ ...prev, caption: e.target.value }))}
+                onChange={(e) =>
+                  setStoryData((prev) => ({ ...prev, caption: e.target.value }))
+                }
                 className="flex-1 bg-transparent border-none focus:outline-none text-sm"
               />
             </div>
@@ -155,7 +186,12 @@ export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps)
                 type="text"
                 placeholder="Add location..."
                 value={storyData.location}
-                onChange={(e) => setStoryData(prev => ({ ...prev, location: e.target.value }))}
+                onChange={(e) =>
+                  setStoryData((prev) => ({
+                    ...prev,
+                    location: e.target.value,
+                  }))
+                }
                 className="flex-1 bg-transparent border-none focus:outline-none text-sm"
               />
             </div>
@@ -168,7 +204,9 @@ export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps)
               >
                 <Music2 className="w-4 h-4 text-gray-400" />
                 <span className="text-sm text-gray-600">
-                  {storyData.music ? `${storyData.music.title} - ${storyData.music.artist}` : 'Add music'}
+                  {storyData.music
+                    ? `${storyData.music.title} - ${storyData.music.artist}`
+                    : "Add music"}
                 </span>
               </button>
 
@@ -178,13 +216,15 @@ export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps)
                     <button
                       key={index}
                       onClick={() => {
-                        setStoryData(prev => ({ ...prev, music }));
+                        setStoryData((prev) => ({ ...prev, music }));
                         setShowMusicSelector(false);
                       }}
                       className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <div className="text-sm font-medium">{music.title}</div>
-                      <div className="text-xs text-gray-500">{music.artist}</div>
+                      <div className="text-xs text-gray-500">
+                        {music.artist}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -198,7 +238,12 @@ export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps)
               <input
                 type="checkbox"
                 checked={storyData.shareToFeed}
-                onChange={(e) => setStoryData(prev => ({ ...prev, shareToFeed: e.target.checked }))}
+                onChange={(e) =>
+                  setStoryData((prev) => ({
+                    ...prev,
+                    shareToFeed: e.target.checked,
+                  }))
+                }
                 className="rounded text-brand-orange focus:ring-brand-orange"
               />
             </label>
@@ -219,7 +264,7 @@ export function AddStoryModal({ isOpen, onClose, onSubmit }: AddStoryModalProps)
               variant="outline"
               className="flex-1"
               onClick={() => {
-                console.log('Open camera');
+                console.log("Open camera");
               }}
             >
               <Camera className="w-4 h-4 mr-2" />
