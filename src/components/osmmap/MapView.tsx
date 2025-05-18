@@ -88,7 +88,6 @@ interface MapViewProps {
 export const MapView: React.FC<MapViewProps> = ({
   viewport,
   markers,
-  selectedMarker,
   routeData,
   onViewportChanged,
   onMapClick,

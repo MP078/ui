@@ -1,12 +1,15 @@
-import React from 'react';
-import { MapPin, Layers, Plus, Minus, Compass } from 'lucide-react';
+import React from "react";
+import { Compass } from "lucide-react";
 
 interface MapControlsProps {
   onLocateMe: () => void;
   isLoading: boolean;
 }
 
-export const MapControls: React.FC<MapControlsProps> = ({ onLocateMe, isLoading }) => {
+export const MapControls: React.FC<MapControlsProps> = ({
+  onLocateMe,
+  isLoading,
+}) => {
   return (
     <div className="absolute bottom-6 left-6 z-[1000]">
       <div className="flex flex-col space-y-2">

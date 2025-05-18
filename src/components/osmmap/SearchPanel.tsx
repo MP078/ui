@@ -34,7 +34,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onResultSelect }) => {
         setIsSearching(false);
       }
     }, 500),
-    []
+    [setResults, setIsSearching, setError]
   );
 
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {

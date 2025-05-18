@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { MapControls } from "./map/MapControls";
 import { MapView } from "./MapView";
 import { SearchPanel } from "./SearchPanel";
 import { InfoPanel } from "./InfoPanel";
@@ -15,6 +14,7 @@ import {
   reverseGeocode,
   getRouteData,
 } from "../../services/mapService";
+import { MapControls } from "./MapControls";
 
 const MapContainer: React.FC = () => {
   const [viewport, setViewport] = useState<MapViewport>({
