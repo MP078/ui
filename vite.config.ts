@@ -9,5 +9,8 @@ export default defineConfig({
     },
     server: {
         allowedHosts: ['75cb-103-224-106-14.ngrok-free.app'],
+        proxy: {
+            '/cable': 'http://localhost:3000',
+        }
     },
 });

@@ -5,13 +5,16 @@ import App from "./App.tsx";
 import "./index.css";
 import { AuthProvider } from "./context/authContext.tsx";
 import { UserProvider } from "./context/UserContext.tsx";
+import { ChatProvider } from "./context/ChatContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <UserProvider>
-          <App />
+          <ChatProvider>
+            <App />
+          </ChatProvider>
         </UserProvider>
       </AuthProvider>
     </BrowserRouter>
