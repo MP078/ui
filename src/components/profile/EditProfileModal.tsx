@@ -1,13 +1,5 @@
-import React, { useState, useContext, useEffect, useRef } from "react";
-import {
-  X,
-  Camera,
-  MapPin,
-  Globe2,
-  Mail,
-  Phone,
-  AlertTriangle,
-} from "lucide-react";
+import { useState, useContext, useEffect, useRef } from "react";
+import { X, Camera, MapPin, Globe2, Mail, Phone } from "lucide-react";
 import { Button } from "../ui/button";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
 import { api } from "../../lib/api"; // Make sure this import exists
@@ -121,13 +113,19 @@ export function EditProfileModal({
       const res = await api.patch("/users", formDataToSend);
       const backendUser = res.data.data || res.data;
       // Defensive: always set image_url and verified
-      setUser && setUser({
-        ...user,
-        ...formData,
-        image_url:
-          backendUser.profile_image || backendUser.image_url || (user?.image_url ?? ""),
-        verified: backendUser.verified ?? (user?.verified ?? false),
-      });
+      if (setUser && user) {
+        setUser({
+          ...user,
+          ...formData,
+          image_url:
+            backendUser.profile_image ||
+            backendUser.image_url ||
+            (user?.image_url ?? ""),
+          verified: backendUser.verified ?? user?.verified ?? false,
+          // Ensure required properties are maintained from the original user object
+          total_trips: user.total_trips,
+        });
+      }
       onSave(formData);
       onClose();
     } catch (error) {
@@ -168,7 +166,7 @@ export function EditProfileModal({
                   accept="image/*"
                   ref={fileInputRef}
                   className="hidden"
-                  onChange={e => {
+                  onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       setAvatarFile(file);
