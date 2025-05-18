@@ -17,14 +17,17 @@ interface ActiveTripCardProps {
     highlights: string[];
     cost: string;
     photo_urls: string[];
+    can_join?: boolean;
   };
   onJoinRequest: (id: string) => void;
 }
 
+
 export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
   const [showJoinConfirmation, setShowJoinConfirmation] = useState(false);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
-  const [isRequested, setIsRequested] = useState(false);
+  const isFull = trip.tripStatus === "full" || trip.totalTravelers >= trip.maxParticipants;
+  const [isRequested, setIsRequested] = useState(() => !isFull && trip.can_join === false);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
 
   const duration = Math.ceil(
@@ -46,10 +49,19 @@ export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
     }
   };
 
-  const handleConfirmJoin = () => {
-    setIsRequested(true);
-    onJoinRequest(trip.tripId);
-    setShowJoinConfirmation(false);
+  const handleConfirmJoin = async () => {
+    try {
+      // Send POST to /trips/:trip_id/trip_participations
+      await import("../../lib/api").then(({ api }) =>
+        api.post(`/trips/${trip.tripId}/trip_participations`)
+      );
+      setIsRequested(true);
+    } catch (error) {
+      // Optionally show error to user
+      alert("Failed to send join request. Please try again.");
+    } finally {
+      setShowJoinConfirmation(false);
+    }
   };
 
   const handleConfirmCancel = () => {
@@ -59,8 +71,9 @@ export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
   };
 
   const getButtonText = () => {
+    if (isFull) return "Trip Full";
+    if (trip.can_join === false) return "Requested";
     if (isRequested) return "Cancel Request";
-    if (!isJoinable()) return "Trip Full";
     return "Request to Join";
   };
 
@@ -131,7 +144,7 @@ export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
 
           <Button
             onClick={handleJoinClick}
-            disabled={!isJoinable() && !isRequested}
+            disabled={isFull || trip.can_join === false}
             variant={isRequested ? "outline" : "default"}
             className={`w-full ${getButtonStyle()}`}
           >

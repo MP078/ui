@@ -346,6 +346,7 @@ const fetchTrips = async () => {
           ? trip.cover_image_url
           : "/placeholders/trip.png",
       summary: trip.description,
+      can_join: trip.can_join,
     }));
 
     return trips;
