@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { MapControls } from './MapControls';
-import { MapView } from './MapView';
-import { SearchPanel } from './SearchPanel';
-import { InfoPanel } from './InfoPanel';
-import { MapMarker, MapPosition, MapViewport, GeocodingResult, RouteData } from '../../types/map';
-import { getCurrentPosition, reverseGeocode, getRouteData } from '../../services/mapService';
+import React, { useState, useEffect } from "react";
+import { MapControls } from "./map/MapControls";
+import { MapView } from "./MapView";
+import { SearchPanel } from "./SearchPanel";
+import { InfoPanel } from "./InfoPanel";
+import {
+  MapMarker,
+  MapPosition,
+  MapViewport,
+  GeocodingResult,
+  RouteData,
+} from "../../types/map";
+import {
+  getCurrentPosition,
+  reverseGeocode,
+  getRouteData,
+} from "../../services/mapService";
 
 const MapContainer: React.FC = () => {
   const [viewport, setViewport] = useState<MapViewport>({
@@ -15,26 +25,33 @@ const MapContainer: React.FC = () => {
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [locationInfo, setLocationInfo] = useState<GeocodingResult | null>(null);
+  const [locationInfo, setLocationInfo] = useState<GeocodingResult | null>(
+    null
+  );
   const [routeData, setRouteData] = useState<RouteData | undefined>(undefined);
   // Store user inputs for marker pairs
   const [userInputs, setUserInputs] = useState<string[]>([]);
 
   useEffect(() => {
     // Log coordinates whenever markers change
-    const coordinates = markers.map(marker => ({
+    const coordinates = markers.map((marker) => ({
       lat: marker.lat,
-      lng: marker.lng
+      lng: marker.lng,
     }));
-    console.log('Marker coordinates:', coordinates);
+    console.log("Marker coordinates:", coordinates);
 
     // For every n markers, take only new input for the new marker pair and save all past inputs
     if (markers.length >= 2) {
       if (userInputs.length < markers.length - 1) {
         // Only ask for the new input
-        const input = window.prompt(`Enter input for marker pair ${userInputs.length + 1}:`);
-        setUserInputs(prev => [...prev, input ?? '']);
-        console.log(`User inputs for ${markers.length} markers:`, [...userInputs, input ?? '']);
+        const input = window.prompt(
+          `Enter input for marker pair ${userInputs.length + 1}:`
+        );
+        setUserInputs((prev) => [...prev, input ?? ""]);
+        console.log(`User inputs for ${markers.length} markers:`, [
+          ...userInputs,
+          input ?? "",
+        ]);
       } else {
         // No new input needed, just log
         console.log(`User inputs for ${markers.length} markers:`, userInputs);
@@ -45,7 +62,9 @@ const MapContainer: React.FC = () => {
     }
 
     if (markers.length >= 2) {
-      const routeCoordinates = markers.map(marker => [marker.lat, marker.lng] as [number, number]);
+      const routeCoordinates = markers.map(
+        (marker) => [marker.lat, marker.lng] as [number, number]
+      );
       fetchRouteData(routeCoordinates);
     } else {
       setRouteData(undefined);
@@ -57,8 +76,8 @@ const MapContainer: React.FC = () => {
       const data = await getRouteData(coordinates);
       setRouteData(data);
     } catch (err) {
-      console.error('Failed to fetch route data:', err);
-      setError('Failed to calculate route');
+      console.error("Failed to fetch route data:", err);
+      setError("Failed to calculate route");
     }
   };
 
@@ -70,14 +89,14 @@ const MapContainer: React.FC = () => {
         id: Date.now().toString(),
         lat: position.lat,
         lng: position.lng,
-        title: info?.display_name || 'New Location',
+        title: info?.display_name || "New Location",
       };
-      
+
       setMarkers([...markers, newMarker]);
       setSelectedMarker(newMarker);
       setLocationInfo(info);
     } catch (err) {
-      setError('Failed to get location info');
+      setError("Failed to get location info");
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -87,12 +106,12 @@ const MapContainer: React.FC = () => {
   const handleMarkerClick = async (marker: MapMarker) => {
     setSelectedMarker(marker);
     setIsLoading(true);
-    
+
     try {
       const info = await reverseGeocode({ lat: marker.lat, lng: marker.lng });
       setLocationInfo(info);
     } catch (err) {
-      setError('Failed to get location info');
+      setError("Failed to get location info");
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -102,7 +121,7 @@ const MapContainer: React.FC = () => {
   const handleLocateMe = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const position = await getCurrentPosition();
       setViewport({
@@ -110,7 +129,7 @@ const MapContainer: React.FC = () => {
         zoom: 16,
       });
     } catch (err) {
-      setError('Could not determine your location');
+      setError("Could not determine your location");
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -118,7 +137,7 @@ const MapContainer: React.FC = () => {
   };
 
   const handleRemoveMarker = (markerId: string) => {
-    const newMarkers = markers.filter(marker => marker.id !== markerId);
+    const newMarkers = markers.filter((marker) => marker.id !== markerId);
     setMarkers(newMarkers);
     // If a marker is removed, also remove the corresponding user input if needed
     if (newMarkers.length < userInputs.length + 1) {
@@ -135,19 +154,19 @@ const MapContainer: React.FC = () => {
       lat: parseFloat(result.lat),
       lng: parseFloat(result.lon),
     };
-    
+
     setViewport({
       center: position,
       zoom: 16,
     });
-    
+
     const newMarker: MapMarker = {
       id: Date.now().toString(),
       lat: position.lat,
       lng: position.lng,
       title: result.display_name,
     };
-    
+
     setMarkers([...markers, newMarker]);
     setSelectedMarker(newMarker);
     setLocationInfo(result);
@@ -166,10 +185,7 @@ const MapContainer: React.FC = () => {
             onMapClick={handleMapClick}
             onMarkerClick={handleMarkerClick}
           />
-          <MapControls
-            onLocateMe={handleLocateMe}
-            isLoading={isLoading}
-          />
+          <MapControls onLocateMe={handleLocateMe} isLoading={isLoading} />
         </div>
         <div className="w-full md:w-1/4 bg-white shadow-lg overflow-y-auto">
           <div className="p-4">

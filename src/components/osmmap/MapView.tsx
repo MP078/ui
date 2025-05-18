@@ -1,16 +1,30 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, ZoomControl, Polyline } from 'react-leaflet';
-import { MapMarker, MapPosition, MapViewport, RouteData } from '../../types/map';
-import 'leaflet/dist/leaflet.css';
-import { icon } from 'leaflet';
+import React, { useEffect } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  useMapEvents,
+  ZoomControl,
+  Polyline,
+} from "react-leaflet";
+import {
+  MapMarker,
+  MapPosition,
+  MapViewport,
+  RouteData,
+} from "../../types/map";
+import "leaflet/dist/leaflet.css";
+import { icon } from "leaflet";
 
 const defaultIcon = icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 const MapEvents: React.FC<{
@@ -48,13 +62,16 @@ const MapEvents: React.FC<{
   return null;
 };
 
-const ChangeView: React.FC<{ center: MapPosition; zoom: number }> = ({ center, zoom }) => {
+const ChangeView: React.FC<{ center: MapPosition; zoom: number }> = ({
+  center,
+  zoom,
+}) => {
   const map = useMap();
-  
+
   useEffect(() => {
     map.setView([center.lat, center.lng], zoom);
   }, [center, zoom, map]);
-  
+
   return null;
 };
 
@@ -81,7 +98,7 @@ export const MapView: React.FC<MapViewProps> = ({
     <MapContainer
       center={[viewport.center.lat, viewport.center.lng]}
       zoom={viewport.zoom}
-      style={{ height: '100%', width: '100%' }}
+      style={{ height: "100%", width: "100%" }}
       zoomControl={false}
       attributionControl={true}
       doubleClickZoom={true}
@@ -94,7 +111,7 @@ export const MapView: React.FC<MapViewProps> = ({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <ZoomControl position="bottomright" />
-      
+
       {markers.map((marker) => (
         <Marker
           key={marker.id}
@@ -124,9 +141,12 @@ export const MapView: React.FC<MapViewProps> = ({
           opacity={0.8}
         />
       )}
-      
+
       <ChangeView center={viewport.center} zoom={viewport.zoom} />
-      <MapEvents onMapClick={onMapClick} onViewportChanged={onViewportChanged} />
+      <MapEvents
+        onMapClick={onMapClick}
+        onViewportChanged={onViewportChanged}
+      />
     </MapContainer>
   );
 };

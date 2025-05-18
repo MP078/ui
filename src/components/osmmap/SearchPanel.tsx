@@ -1,15 +1,15 @@
-import React, { useState, useCallback } from 'react';
-import { Search, X, Loader2 } from 'lucide-react';
-import { searchLocations } from '../../services/mapService';
-import { GeocodingResult } from '../../types/map';
-import { debounce } from '../../utils/debounce';
+import React, { useState, useCallback } from "react";
+import { Search, X, Loader2 } from "lucide-react";
+import { searchLocations } from "../../services/mapService";
+import { GeocodingResult } from "../../types/map";
+import { debounce } from "../../utils/debounce";
 
 interface SearchPanelProps {
   onResultSelect: (result: GeocodingResult) => void;
 }
 
 export const SearchPanel: React.FC<SearchPanelProps> = ({ onResultSelect }) => {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeocodingResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +28,8 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onResultSelect }) => {
         const searchResults = await searchLocations(searchQuery);
         setResults(searchResults);
       } catch (err) {
-        setError('Search failed. Please try again.');
-        console.error('Search error:', err);
+        setError("Search failed. Please try again.");
+        console.error("Search error:", err);
       } finally {
         setIsSearching(false);
       }
@@ -44,7 +44,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onResultSelect }) => {
   };
 
   const handleClearSearch = () => {
-    setQuery('');
+    setQuery("");
     setResults([]);
     setError(null);
   };
@@ -99,9 +99,11 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onResultSelect }) => {
                   className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
                   onClick={() => handleResultClick(result)}
                 >
-                  <div className="text-sm font-medium">{result.display_name}</div>
+                  <div className="text-sm font-medium">
+                    {result.display_name}
+                  </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Lat: {parseFloat(result.lat).toFixed(6)}, Lng:{' '}
+                    Lat: {parseFloat(result.lat).toFixed(6)}, Lng:{" "}
                     {parseFloat(result.lon).toFixed(6)}
                   </div>
                 </li>
