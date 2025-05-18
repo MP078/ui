@@ -51,6 +51,7 @@ export default function UpcomingTrips() {
     startDate: trip.start_date || trip.startDate,
     endDate: trip.end_date || trip.endDate,
     totalTravelers: trip.members_count || trip.total_traveler || trip.totalTravelers || 0,
+    maximumParticipants: trip.maximum_participants || trip.maximumParticipants || trip.maxParticipants || null,
     imageUrl: trip.cover_image_url || trip.coverImage || trip.image_url || null,
   }));
 
@@ -83,7 +84,12 @@ export default function UpcomingTrips() {
                 </div>
                 <div className="flex items-center gap-2 text-gray-600 mt-1">
                   <Users className="w-4 h-4" />
-                  <span className="text-sm">{trip.totalTravelers} People</span>
+                  <span className="text-sm">
+                    {trip.totalTravelers}
+                    {trip.maximumParticipants ? (
+                      <>/{trip.maximumParticipants}</>
+                    ) : null} people
+                  </span>
                 </div>
               </div>
             </div>
