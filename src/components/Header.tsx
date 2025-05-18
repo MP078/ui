@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { MapPin, Bell, Users } from "lucide-react";
+import { TripRequestDropdown } from "./notifications/TripRequestDropdown";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { NotificationDropdown } from "./notifications/NotificationDropdown";
 import { FriendRequestDropdown } from "./notifications/FriendRequestDropdown";
@@ -16,6 +17,8 @@ export default function Header({ image_url }: { image_url: string }) {
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const friendRequestRef = useRef<HTMLDivElement>(null);
+  const tripRequestRef = useRef<HTMLDivElement>(null);
+  const [showTripRequests, setShowTripRequests] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -36,6 +39,12 @@ export default function Header({ image_url }: { image_url: string }) {
         !friendRequestRef.current.contains(event.target as Node)
       ) {
         setShowFriendRequests(false);
+      }
+      if (
+        tripRequestRef.current &&
+        !tripRequestRef.current.contains(event.target as Node)
+      ) {
+        setShowTripRequests(false);
       }
     }
 
@@ -146,12 +155,14 @@ export default function Header({ image_url }: { image_url: string }) {
             </nav>
           </div>
           <div className="flex items-center gap-4">
+            {/* Friend Requests Dropdown */}
             <div className="relative" ref={friendRequestRef}>
               <button
                 className="relative"
                 onClick={() => {
                   setShowFriendRequests(!showFriendRequests);
                   setShowNotifications(false);
+                  setShowTripRequests(false);
                 }}
               >
                 <Users className="w-6 h-6 text-gray-600" />
@@ -159,6 +170,34 @@ export default function Header({ image_url }: { image_url: string }) {
               <FriendRequestDropdown
                 isOpen={showFriendRequests}
                 onClose={() => setShowFriendRequests(false)}
+              />
+            </div>
+
+            {/* Trip Requests Dropdown */}
+            <div className="relative" ref={tripRequestRef}>
+              <button
+                className="relative"
+                onClick={() => {
+                  setShowTripRequests(!showTripRequests);
+                  setShowFriendRequests(false);
+                  setShowNotifications(false);
+                }}
+              >
+                {/* Unique icon for trip requests: suitcase/briefcase */}
+                <svg
+                  className="w-6 h-6 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <rect x="2" y="7" width="20" height="13" rx="2" />
+                  <path d="M16 7V5a4 4 0 0 0-8 0v2" />
+                </svg>
+              </button>
+              <TripRequestDropdown
+                isOpen={showTripRequests}
+                onClose={() => setShowTripRequests(false)}
               />
             </div>
 
