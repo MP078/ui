@@ -1,18 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Calendar } from "lucide-react";
 import { formatDate } from "../utils/date";
 import { api } from "../lib/api";
+import { UserContext } from "../context/UserContext";
 
-export default function UpcomingTrips() {
+function UpcomingTripsFeed() {
   const [showAll, setShowAll] = useState(false);
   const [feed, setFeed] = useState<any[]>([]);
+  const { user } = useContext(UserContext);
 
   useEffect(() => {
-    // Fetch upcoming trips data
+    // Fetch upcoming trips for the current user
     const fetchUpcomingTrips = async () => {
+      if (!user?.username) return;
       try {
-        const response = await api.get("/trips?upcoming=true");
-        // Handle both array and object response
+        const response = await api.get("/trips", {
+          params: {
+            username: user.username,
+          },
+        });
         let trips: any[] = [];
         if (Array.isArray(response.data)) {
           trips = response.data;
@@ -21,14 +27,20 @@ export default function UpcomingTrips() {
         } else {
           trips = [];
         }
-        setFeed(trips);
+        // Filter for upcoming trips (end_date >= today)
+        const currentDate = new Date();
+        const upcoming = trips.filter((trip: any) => {
+          const end = trip.end_date || trip.endDate;
+          return end && new Date(end) >= currentDate;
+        });
+        setFeed(upcoming);
       } catch (error) {
         console.error("Error fetching upcoming trips:", error);
         setFeed([]);
       }
     };
     fetchUpcomingTrips();
-  }, []);
+  }, [user]);
 
   // Only use backend data
   const displayedTrips = showAll ? feed : feed.slice(0, 3);
@@ -92,3 +104,5 @@ export default function UpcomingTrips() {
     </div>
   );
 }
+
+export default UpcomingTripsFeed;
