@@ -1,50 +1,51 @@
-import { createConsumer } from '@rails/actioncable';
+import { createConsumer, Consumer, Subscription } from '@rails/actioncable';
 
-import type { Consumer, Subscription } from "@rails/actioncable";
-
-// Use relative path for ActionCable consumer to ensure cookies are sent
 let consumer: Consumer | null = null;
 
 export const getConsumer = (): Consumer => {
+
+    const token = localStorage.getItem('access_token');
     if (!consumer) {
-        // Use relative path so browser sends session cookies
-        consumer = createConsumer('/cable');
+        // Make sure to include credentials
+        const wsUrl = 'ws://localhost:3000/cable?token=' + token;
+        consumer = createConsumer(wsUrl);
+
+        // Add connection monitoring
+        // consumer.connection.monitor.start(); // Not needed, handled internally
+
+        // Debug events (ActionCable does not provide 'on' method for connection events directly)
+        // You can use the subscription callbacks for connection events instead
     }
+
     return consumer;
 };
 
-type ReceivedCallback = (data: unknown) => void;
-type ConnectedCallback = () => void;
-type DisconnectedCallback = () => void;
-
 export const createChatSubscription = (
     conversationId: string | number,
-    receivedCallback?: ReceivedCallback,
-    connectedCallback?: ConnectedCallback,
-    disconnectedCallback?: DisconnectedCallback
+    receivedCallback: (data: unknown) => void
 ): Subscription => {
     const consumer = getConsumer();
 
     return consumer.subscriptions.create(
-        { channel: 'ChatChannel', conversation_id: conversationId },
+        {
+            channel: 'ChatChannel',
+            conversation_id: conversationId
+        },
         {
             connected() {
                 console.log(`Connected to conversation ${conversationId}`);
-                if (connectedCallback) connectedCallback();
             },
 
             disconnected() {
                 console.log(`Disconnected from conversation ${conversationId}`);
-                if (disconnectedCallback) disconnectedCallback();
             },
 
             received(data: unknown) {
                 console.log('Received message:', data);
-                if (receivedCallback) receivedCallback(data);
+                receivedCallback(data);
             },
 
-            // DO NOT override the built-in send method! Use a custom method name for sending messages.
-            sendMessage(content: object) {
+            send(content: unknown) {
                 this.perform('receive', { content });
             },
 
@@ -53,11 +54,4 @@ export const createChatSubscription = (
             }
         }
     );
-};
-
-export const resetConsumer = (): void => {
-    if (consumer) {
-        consumer.disconnect();
-        consumer = null;
-    }
 };
