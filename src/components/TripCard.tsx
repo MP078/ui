@@ -1,5 +1,4 @@
-import React from 'react';
-import { Users } from 'lucide-react';
+import { Users } from "lucide-react";
 
 interface TripCardProps {
   image: string;
@@ -8,7 +7,12 @@ interface TripCardProps {
   people: number;
 }
 
-export default function TripCard({ image, title, date, people }: TripCardProps) {
+export default function TripCard({
+  image,
+  title,
+  date,
+  people,
+}: TripCardProps) {
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-sm border">
       <img src={image} alt={title} className="w-full h-48 object-cover" />

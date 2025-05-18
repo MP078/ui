@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar } from "lucide-react";
 import { formatDate } from "../utils/date";
 import { api } from "../lib/api";

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { MapPin, Users, Calendar, Eye } from "lucide-react";
 import { Button } from "../ui/button";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
@@ -14,12 +14,9 @@ interface ActiveTripCardProps {
     totalTravelers: number;
     maxParticipants: number;
     imageUrl: string;
-    summary?: {
-      totalDays: number;
-      totalCost: number;
-      highlights: string[];
-      photos: string[];
-    };
+    highlights: string[];
+    cost: string;
+    photo_urls: string[];
   };
   onJoinRequest: (id: string) => void;
 }
@@ -119,7 +116,7 @@ export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
             </div>
           </div>
 
-          {trip.summary && (
+          {trip && (
             <div className="mb-4">
               <Button
                 variant="ghost"
@@ -143,12 +140,15 @@ export function ActiveTripCard({ trip, onJoinRequest }: ActiveTripCardProps) {
         </div>
       </div>
 
-      {trip.summary && (
+      {trip && (
         <TripSummaryModal
           isOpen={showSummaryModal}
           onClose={() => setShowSummaryModal(false)}
-          summary={trip.summary}
           tripDestination={trip.destination}
+          total_days={duration}
+          total_cost={trip.totalTravelers}
+          highlights={[]}
+          photos={[]}
         />
       )}
 
