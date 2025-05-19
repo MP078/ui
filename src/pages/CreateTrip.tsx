@@ -192,6 +192,10 @@ const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR
 
 // Main CreateTrip component
 export default function CreateTrip() {
+  // State for cover image file upload
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  // Ref for file input (for programmatic click)
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const destinationDetails = location.state?.destination;
@@ -389,16 +393,6 @@ export default function CreateTrip() {
 
     console.log("Form data before submission:", formData);
     try {
-      // Validate image URL if using URL as image source
-      if (formData.image && formData.image.startsWith("http")) {
-        const isValidUrl = await validateImageUrl(formData.image);
-        if (!isValidUrl) {
-          alert("The image URL provided is not valid or the image is not accessible. Please check the URL and try again.");
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
       // Format cost string
       let currencySymbol = "";
       switch (formData.cost.currency) {
@@ -411,21 +405,37 @@ export default function CreateTrip() {
       const formattedCost = `${currencySymbol} ${formData.cost.amount}`;
 
       // Create FormData for API
-      const payload = {
-        title: formData.title,
-        location: formData.location,
-        start_date: formData.startDate,
-        end_date: formData.endDate,
-        maximum_participants: formData.maxParticipants,
-        description: formData.description,
-        activities: formData.activities,
-        difficulty: formData.difficulty,
-        cost: formattedCost,
-        highlights: formData.highlights,
-        cover_image_url: formData.image,
-        pins: formData.pins.map(pin => ({ lat: pin.latitude, lng: pin.longitude })),
-        methods: formData.method, // <-- use 'methods' and the array directly
-      };
+      // Use FormData to support file/blob uploads
+      const payload = new FormData();
+      payload.append('title', formData.title);
+      payload.append('location', formData.location);
+      payload.append('start_date', formData.startDate);
+      payload.append('end_date', formData.endDate);
+      payload.append('maximum_participants', String(formData.maxParticipants));
+      payload.append('description', formData.description);
+      payload.append('activities', JSON.stringify(formData.activities));
+      payload.append('difficulty', formData.difficulty);
+      payload.append('cost', formattedCost);
+      payload.append('highlights', JSON.stringify(formData.highlights));
+      payload.append('pins', JSON.stringify(formData.pins.map(pin => ({ lat: pin.latitude, lng: pin.longitude }))));
+      payload.append('methods', JSON.stringify(formData.method));
+
+      // Cover image logic
+      if (imageFile) {
+        // If a file is uploaded, use it
+        payload.append('cover_image', imageFile, imageFile.name);
+      } else if (formData.image && formData.image.startsWith('http')) {
+        // If a URL is provided, try to fetch and convert to blob
+        try {
+          const response = await fetch(formData.image);
+          const blob = await response.blob();
+          const filename = formData.image.split('/').pop() || 'cover.jpg';
+          payload.append('cover_image', blob, filename);
+        } catch (err) {
+          console.warn('Could not fetch image as blob, sending URL instead.');
+          payload.append('cover_image', new Blob([formData.image], { type: 'text/plain' }), 'cover_image.txt');
+        }
+      }
 
       console.log("Trip data being sent to API (payload)", payload);
 
@@ -668,47 +678,86 @@ export default function CreateTrip() {
             </div>
 
             <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-                Cover Image URL
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cover Image
               </label>
-              <div className="relative">
-                <ImageIcon className="absolute left-3 top-2.5 text-gray-400 w-5 h-5" />
-                <input
-                  type="url"
-                  id="image"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
-                  placeholder="Enter image URL"
-                  required
-                />
-                {/* Show preview and remove button if image URL is present */}
-                {formData.image && formData.image.startsWith('http') && (
-                  <div className="absolute right-0 top-0 flex flex-col items-end z-10">
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    id="image"
+                    name="image"
+                    value={formData.image}
+                    onChange={e => {
+                      setFormData(prev => ({ ...prev, image: e.target.value }));
+                      setImageFile(null);
+                    }}
+                    className="flex-1 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
+                    placeholder="Enter image URL or upload file"
+                    disabled={!!imageFile}
+                  />
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      style={{ display: 'none' }}
+                      onChange={e => {
+                        const file = e.target.files && e.target.files[0];
+                        if (file) {
+                          setImageFile(file);
+                          setFormData(prev => ({ ...prev, image: '' }));
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex items-center gap-1"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <ImageIcon className="w-5 h-5" /> Upload
+                    </Button>
+                  </div>
+                  {(formData.image || imageFile) && (
                     <button
                       type="button"
-                      className="mt-2 mr-2 bg-white border border-gray-200 rounded-full p-1 shadow hover:bg-gray-100"
+                      className="bg-white border border-gray-200 rounded-full p-1 shadow hover:bg-gray-100 ml-2"
                       title="Remove image"
-                      onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, image: '' }));
+                        setImageFile(null);
+                      }}
                     >
                       <X className="w-4 h-4 text-gray-500" />
                     </button>
+                  )}
+                </div>
+                {/* Preview for file or URL */}
+                {imageFile && (
+                  <div className="mt-2 flex flex-col items-start">
+                    <span className="text-xs text-gray-500 mb-1">Image Preview:</span>
+                    <img
+                      src={URL.createObjectURL(imageFile)}
+                      alt="Trip Cover Preview"
+                      className="rounded-lg border border-gray-200 max-h-48 max-w-full shadow"
+                      style={{ objectFit: 'cover' }}
+                    />
+                  </div>
+                )}
+                {formData.image && formData.image.startsWith('http') && !imageFile && (
+                  <div className="mt-2 flex flex-col items-start">
+                    <span className="text-xs text-gray-500 mb-1">Image Preview:</span>
+                    <img
+                      src={formData.image}
+                      alt="Trip Cover Preview"
+                      className="rounded-lg border border-gray-200 max-h-48 max-w-full shadow"
+                      style={{ objectFit: 'cover' }}
+                      onError={e => (e.currentTarget.style.display = 'none')}
+                    />
                   </div>
                 )}
               </div>
-              {formData.image && formData.image.startsWith('http') && (
-                <div className="mt-2 flex flex-col items-start">
-                  <span className="text-xs text-gray-500 mb-1">Image Preview:</span>
-                  <img
-                    src={formData.image}
-                    alt="Trip Cover Preview"
-                    className="rounded-lg border border-gray-200 max-h-48 max-w-full shadow"
-                    style={{ objectFit: 'cover' }}
-                    onError={e => (e.currentTarget.style.display = 'none')}
-                  />
-                </div>
-              )}
             </div>
 
             <div>
@@ -979,11 +1028,4 @@ export default function CreateTrip() {
   );
 }
 
-function validateImageUrl(url: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const img = new window.Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    img.src = url;
-  });
-}
+
