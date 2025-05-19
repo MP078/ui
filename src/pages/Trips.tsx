@@ -1,4 +1,6 @@
 import { useContext, useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import { getAvatarNumber, UserContext } from "../context/UserContext";
 import { StatCard } from "../components/stats/StatCard";
 import {
@@ -499,12 +501,34 @@ export default function Trips() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">My Travel Map</h2>
           </div>
-          <div className="bg-white rounded-lg p-4 h-[400px] flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-lg font-medium mb-2">Map Coming Soon</p>
-              <p>Integration with map API is in progress</p>
-            </div>
+          <div className="bg-white rounded-lg p-0 h-[400px] overflow-hidden">
+            {/* OpenStreetMap with trip markers */}
+            <MapContainer center={[27.7, 85.3]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {/* Place a marker for each trip's last pin if available */}
+              {tripsData.map((trip: any) => {
+                const pins = trip.pins || [];
+                if (!Array.isArray(pins) || pins.length === 0) return null;
+                const lastPin = pins[pins.length - 1];
+                if (!lastPin || typeof lastPin.lat !== 'number' || typeof lastPin.lng !== 'number') return null;
+                return (
+                  <Marker key={trip.id} position={[lastPin.lat, lastPin.lng]}>
+                    <Popup>
+                      <div className="min-w-[180px]">
+                        <div className="font-semibold text-brand-orange mb-1">{trip.title}</div>
+                        <div className="text-xs text-gray-700 mb-1">Trip ID: {trip.displayId}</div>
+                        <div className="text-xs text-gray-500 mb-1">{trip.destination}</div>
+                        <div className="text-xs text-gray-500 mb-1">{trip.start_date ? new Date(trip.start_date).toLocaleDateString() : ''} - {trip.end_date ? new Date(trip.end_date).toLocaleDateString() : ''}</div>
+                        <div className="text-xs text-gray-500">{trip.totalTravelers} travelers</div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+            </MapContainer>
           </div>
         </section>
       </div>
