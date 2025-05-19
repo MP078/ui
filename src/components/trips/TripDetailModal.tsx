@@ -57,9 +57,32 @@ function MapSection() {
   // Center map on first pin, fallback to India
   const center = pins.length > 0 ? [pins[0].lat, pins[0].lng] : [20.5937, 78.9629];
 
-  // Polyline route
+  // Polyline route (straight lines)
   const routeCoords = pins.map(p => [p.lat, p.lng]);
   const totalDistance = getTotalDistance(pins).toFixed(2);
+
+  // --- Route with curved lines between pins (using Leaflet's arc or geodesic plugin logic) ---
+  // We'll approximate a curve using intermediate points for each segment
+  function getArcPoints(a: [number, number], b: [number, number], numPoints = 30) {
+    // Simple quadratic bezier for demo: control point offset northwards
+    const lat1 = a[0], lng1 = a[1], lat2 = b[0], lng2 = b[1];
+    const offset = 0.15; // adjust for more/less curve
+    const ctrlLat = (lat1 + lat2) / 2 + offset;
+    const ctrlLng = (lng1 + lng2) / 2;
+    const points = [];
+    for (let t = 0; t <= 1; t += 1 / numPoints) {
+      const x = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * ctrlLat + t * t * lat2;
+      const y = (1 - t) * (1 - t) * lng1 + 2 * (1 - t) * t * ctrlLng + t * t * lng2;
+      points.push([x, y]);
+    }
+    return points;
+  }
+
+  // Build all arc segments between pins
+  let arcSegments = [];
+  for (let i = 1; i < pins.length; i++) {
+    arcSegments.push(getArcPoints([pins[i-1].lat, pins[i-1].lng], [pins[i].lat, pins[i].lng]));
+  }
 
   return (
     <div>
@@ -70,7 +93,10 @@ function MapSection() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&copy; OpenStreetMap contributors"
           />
-          <Polyline positions={routeCoords} color="#ff6600" weight={4} />
+          {/* Draw curved arcs between pins */}
+          {arcSegments.map((arc, idx) => (
+            <Polyline key={idx} positions={arc} color="#ff6600" weight={4} />
+          ))}
           {pins.map((pin, idx) => (
             <Marker
               key={idx}
@@ -220,11 +246,11 @@ export function TripDetailModal({ isOpen, onClose, trip }: TripDetailModalProps)
               {trip.highlights && trip.highlights.length > 0 && (
                 <div className="md:w-1/2 mb-6 md:mb-0">
                   <h3 className="text-xl font-semibold mb-3">Trip Highlights</h3>
-                  <ul className="grid grid-cols-1 md:grid-cols-1 gap-3">
+                  <ul className="space-y-2">
                     {trip.highlights.map((highlight, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <div className="mt-1 text-brand-orange">•</div>
-                        <span>{highlight}</span>
+                      <li key={index} className="flex gap-2 items-center align-middle">
+                        <span className="text-brand-orange flex items-center justify-center text-lg">•</span>
+                        <span className="flex items-center text-gray-700">{highlight}</span>
                       </li>
                     ))}
                   </ul>

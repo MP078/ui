@@ -1,7 +1,7 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import L from 'leaflet';
-import { X, MapPin, Star, Calendar, ArrowRight } from 'lucide-react';
+import { X, MapPin, Star, Calendar, Users, ArrowRight } from 'lucide-react';
+// Constant coordinates for the map pin (example: Kathmandu, Nepal)
+
 import { Button } from '../ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,10 +19,9 @@ export interface Destination {
   highlights?: string[];
   averageCost?: string;
   travelTips?: string[];
-  lat?: number;
-  lng?: number;
-// End of Destination interface
 }
+// Mt. Everest coordinates
+const MAP_COORDS = { lat: 27.9881, lng: 86.9250 };
 
 interface DestinationDetailModalProps {
   isOpen: boolean;
@@ -59,54 +58,19 @@ export function DestinationDetailModal({
     }
   };
 
-
-
-// OSM map with a single pin at the given lat/lng
-function OSMSinglePinMap({ lat, lng }: { lat: number; lng: number }) {
-  // Custom marker icon (fixes missing default icon in Leaflet)
-  const markerIcon = L.icon({
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    shadowSize: [41, 41],
-  });
-  return (
-    <div style={{ width: '100%', height: '100%', minHeight: 180, minWidth: 180 }}>
-      <MapContainer
-        center={[lat, lng]}
-        zoom={11}
-        scrollWheelZoom={true}
-        style={{ width: '100%', height: '100%' }}
-        dragging={true}
-        doubleClickZoom={true}
-        zoomControl={true}
-        attributionControl={true}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
-        />
-        <Marker position={[lat, lng]} icon={markerIcon} />
-      </MapContainer>
-    </div>
-  );
-}
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-4xl relative max-h-[90vh] flex flex-col overflow-hidden">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* The image header is now inside the scrollable area, so it scrolls away with content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="h-80 relative">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Image, header, and all content scroll together */}
+          <div className="h-80 relative mb-6">
             <img
               src={destination.image}
               alt={destination.name}
@@ -121,7 +85,7 @@ function OSMSinglePinMap({ lat, lng }: { lat: number; lng: number }) {
               </div>
             </div>
             <div className="absolute top-6 right-16 flex gap-2">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(destination.difficulty)}`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(destination.difficulty)}`}> 
                 {destination.difficulty}
               </span>
               <span className="bg-white/90 px-3 py-1 rounded-full text-sm font-medium text-gray-800">
@@ -130,11 +94,7 @@ function OSMSinglePinMap({ lat, lng }: { lat: number; lng: number }) {
             </div>
           </div>
 
-
-
-
           <div className="p-6">
-            {/* Title, rating, and location */}
             <div className="flex items-center gap-2 mb-6">
               <div className="flex items-center">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -148,50 +108,33 @@ function OSMSinglePinMap({ lat, lng }: { lat: number; lng: number }) {
                   />
                 ))}
               </div>
-              <span className="font-medium text-lg">{destination.rating}</span>
+              <span className="font-medium">{destination.rating}</span>
             </div>
-
 
             <div className="mb-8">
               <h3 className="text-xl font-semibold mb-3">About</h3>
               <p className="text-gray-700 leading-relaxed">{destination.description}</p>
             </div>
 
-            <div className="mb-8 flex flex-col md:flex-row md:gap-8">
-              {destination.highlights && (
-                <div className="md:w-1/2 mb-6 md:mb-0">
-                  <h3 className="text-xl font-semibold mb-3">Highlights</h3>
-                  <ul className="grid grid-cols-1 md:grid-cols-1 gap-3">
-                    {destination.highlights.map((highlight: string, index: number) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <div className="mt-1 text-brand-orange">•</div>
-                        <span>{highlight}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="md:w-1/2 flex flex-col items-center justify-center">
-                <h3 className="text-xl font-semibold mb-3">Destination Location</h3>
-                <div className="w-full h-72 rounded-lg overflow-hidden mb-2 border border-gray-200 flex items-center justify-center bg-gray-100">
-                  {/* Show OSM map if coordinates are available, else fallback to pin icon */}
-                  {typeof destination.lat === 'number' && typeof destination.lng === 'number' ? (
-                    <OSMSinglePinMap lat={destination.lat} lng={destination.lng} />
-                  ) : (
-                    <span className="text-brand-orange text-4xl">
-                      <MapPin className="w-10 h-10 mx-auto" />
-                    </span>
-                  )}
-                </div>
-                <div className="text-gray-700 text-sm text-center">{destination.location}</div>
+            {destination.highlights && (
+              <div className="mb-8">
+                <h3 className="text-xl font-semibold mb-3">Highlights</h3>
+                <ul className="space-y-2">
+                  {destination.highlights.map((highlight, index) => (
+                    <li key={index} className="flex gap-2 items-center align-middle">
+                      <span className="text-brand-orange flex items-center justify-center text-lg">•</span>
+                      <span className="flex items-center">{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            )}
 
             {destination.activities && (
               <div className="mb-8">
                 <h3 className="text-xl font-semibold mb-3">Activities</h3>
                 <div className="flex flex-wrap gap-2">
-                  {destination.activities.map((activity: string, index: number) => (
+                  {destination.activities.map((activity, index) => (
                     <span 
                       key={index} 
                       className="bg-gray-100 px-3 py-1 rounded-full text-gray-700"
@@ -229,15 +172,32 @@ function OSMSinglePinMap({ lat, lng }: { lat: number; lng: number }) {
               <div className="mb-8">
                 <h3 className="text-xl font-semibold mb-3">Travel Tips</h3>
                 <ul className="space-y-2">
-                  {destination.travelTips.map((tip: string, index: number) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <div className="mt-1 text-brand-orange">•</div>
-                      <span className="text-gray-700">{tip}</span>
+                  {destination.travelTips.map((tip, index) => (
+                    <li key={index} className="flex gap-2 items-center align-middle">
+                      <span className="text-brand-orange flex items-center justify-center text-lg">•</span>
+                      <span className="flex items-center text-gray-700">{tip}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
+
+            {/* OSM Map Section with constant pin */}
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold mb-3">Location Map</h3>
+              <div className="w-full rounded-lg overflow-hidden" style={{ minHeight: 250 }}>
+                <iframe
+                  title="OpenStreetMap"
+                  width="100%"
+                  height="250"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${MAP_COORDS.lng-0.15}%2C${MAP_COORDS.lat-0.09}%2C${MAP_COORDS.lng+0.15}%2C${MAP_COORDS.lat+0.09}&layer=mapnik&marker=${MAP_COORDS.lat}%2C${MAP_COORDS.lng}&zoom=10`}
+                />
+              </div>
+            </div>
 
             <div className="flex justify-end items-center mt-6">
               <Button 
