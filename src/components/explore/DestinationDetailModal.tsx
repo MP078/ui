@@ -18,6 +18,8 @@ export interface Destination {
   averageCost?: string;
   travelTips?: string[];
 }
+// Mt. Everest coordinates
+const MAP_COORDS = { lat: 27.9881, lng: 86.9250 };
 
 interface DestinationDetailModalProps {
   isOpen: boolean;
@@ -57,6 +59,7 @@ export function DestinationDetailModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-4xl relative max-h-[90vh] flex flex-col overflow-hidden">
+         <div className="flex-1 overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
@@ -64,7 +67,7 @@ export function DestinationDetailModal({
           <X className="w-5 h-5" />
         </button>
 
-        <div className="h-80 relative">
+        <div className="h-80 relative mb-6">
           <img
             src={destination.image}
             alt={destination.name}
@@ -90,7 +93,6 @@ export function DestinationDetailModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
           <div className="p-6">
             <div className="flex items-center gap-2 mb-6">
               <div className="flex items-center">
@@ -119,8 +121,8 @@ export function DestinationDetailModal({
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {destination.highlights.map((highlight, index) => (
                     <li key={index} className="flex items-start gap-2">
-                      <div className="mt-1 text-brand-orange">•</div>
-                      <span>{highlight}</span>
+                      <div className="mtext-brand-orange flex items-center justify-center text-lg">•</div>
+                      <span className="flex items-center">{highlight}</span>
                     </li>
                   ))}
                 </ul>
@@ -170,25 +172,33 @@ export function DestinationDetailModal({
                 <h3 className="text-xl font-semibold mb-3">Travel Tips</h3>
                 <ul className="space-y-2">
                   {destination.travelTips.map((tip, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <div className="mt-1 text-brand-orange">•</div>
-                      <span className="text-gray-700">{tip}</span>
+                    <li key={index} className="flex gap-2 items-center align-middle">
+                      <div className="text-brand-orange flex items-center justify-center text-lg">•</div>
+                      <span className="flex items-center text-gray-700">{tip}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
 
+                {/* OSM Map Section with constant pin */}
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold mb-3">Location Map</h3>
+              <div className="w-full rounded-lg overflow-hidden" style={{ minHeight: 250 }}>
+                <iframe
+                  title="OpenStreetMap"
+                  width="100%"
+                  height="250"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${MAP_COORDS.lng-0.15}%2C${MAP_COORDS.lat-0.09}%2C${MAP_COORDS.lng+0.15}%2C${MAP_COORDS.lat+0.09}&layer=mapnik&marker=${MAP_COORDS.lat}%2C${MAP_COORDS.lng}&zoom=10`}
+                />
+              </div>
+            </div>
+
             <div className="flex justify-between items-center mt-6">
-              <a 
-                href={`https://www.google.com/maps/search/${encodeURIComponent(destination.name + ' ' + destination.location)}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-brand-orange hover:underline"
-              >
-                <Globe className="w-5 h-5" />
-                <span>View on Map</span>
-              </a>
               
               <Button 
                 onClick={handlePlanTrip}
@@ -201,6 +211,6 @@ export function DestinationDetailModal({
           </div>
         </div>
       </div>
-    </div>
+      </div>
   );
 }

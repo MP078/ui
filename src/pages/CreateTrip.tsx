@@ -354,7 +354,7 @@ export default function CreateTrip() {
    */
   // Date validation state
   const [dateError, setDateError] = useState<string | null>(null);
-
+  console.log("Form data handeled submission:", formData);
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMethodError(null);
@@ -376,7 +376,7 @@ export default function CreateTrip() {
       setIsSubmitting(false);
       return;
     }
-
+      console.log("Form data before submission:", formData);
     try {
       // Validate image URL if using URL as image source
       if (formData.image && formData.image.startsWith("http")) {
@@ -435,7 +435,7 @@ export default function CreateTrip() {
       const response = await api.post("/trips", formDataToSend);
       console.log("Trip created successfully:", response.data);
 
-      navigate("/trips");
+      //navigate("/trips");
     } catch (error) {
       console.error("Error creating trip:", error);
       alert("Failed to create trip.");
@@ -954,6 +954,11 @@ export default function CreateTrip() {
   );
 }
 
-function validateImageUrl(image: string) {
-  throw new Error('Function not implemented.');
+function validateImageUrl(url: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
 }
