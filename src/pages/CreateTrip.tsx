@@ -21,27 +21,7 @@ import L from 'leaflet';
 
 
 
-/**
- * Fetches a route for multiple waypoints using the OSRM API in a single call.
- *
- * This function is used to get the full route (geometry and distance) for a trip with multiple pins (waypoints).
- * It is optimized for speed by making a single API call to OSRM's /route/v1/driving endpoint,
- * passing all waypoints at once, rather than making multiple requests for each segment.
- *
- * @param pins Array of pin objects, each with latitude and longitude properties.
- *   Example: [ { latitude: 27.7, longitude: 85.3 }, { latitude: 27.8, longitude: 85.4 }, ... ]
- * @returns An object with:
- *   - geometry: Array of [lat, lng] pairs representing the full route polyline for Leaflet
- *   - distance: Total route distance in kilometers (number)
- *   Returns { geometry: [], distance: 0 } if less than 2 pins, or null if the API call fails.
- *
- * Example usage:
- *   const result = await fetchMultiWaypointRoute(pins);
- *   if (result) {
- *     // result.geometry is an array of [lat, lng] pairs for the route
- *     // result.distance is the total distance in km
- *   }
- */
+
 async function fetchMultiWaypointRoute(pins: { latitude: number; longitude: number }[]) {
   // If fewer than 2 pins, no route can be calculated; return empty geometry and 0 distance
   if (pins.length < 2) return { geometry: [], distance: 0 };
@@ -135,7 +115,7 @@ interface TripFormData {
   maxParticipants: number;
   description: string;
   activities: string[];
-  difficulty: 'easy' | 'moderate' | 'difficult';
+  difficulty: 'easy' | 'moderate' | 'hard';
   image: string;
   highlights: string[];
   cost: {
@@ -221,7 +201,13 @@ export default function CreateTrip() {
         title: `Trip to ${destinationDetails.name}`,
         location: destinationDetails.location,
         description: destinationDetails.description || '',
-        difficulty: destinationDetails.difficulty?.toLowerCase() || 'easy',
+        difficulty: (() => {
+          if (!destinationDetails.difficulty) return 'easy';
+          const d = destinationDetails.difficulty.toLowerCase();
+          if (['easy', 'moderate', 'hard'].includes(d)) return d as 'easy' | 'moderate' | 'hard';
+          if (d === 'difficult') return 'hard';
+          return 'easy';
+        })(),
         image: destinationDetails.image || '',
         activities: destinationDetails.activities || [],
         highlights: destinationDetails.highlights || [],
@@ -420,12 +406,17 @@ export default function CreateTrip() {
       payload.append('end_date', formData.endDate);
       payload.append('maximum_participants', String(formData.maxParticipants));
       payload.append('description', formData.description);
-      payload.append('activities', JSON.stringify(formData.activities));
+      formData.activities.forEach((a) => payload.append('activities[]', a));
       payload.append('difficulty', formData.difficulty);
-      payload.append('cost', formattedCost);
-      payload.append('highlights', JSON.stringify(formData.highlights));
-      payload.append('pins', JSON.stringify(formData.pins.map(pin => ({ lat: pin.latitude, lng: pin.longitude }))));
-      payload.append('methods', JSON.stringify(formData.method));
+      payload.append('cost', String(formData.cost.amount));
+      formData.highlights.forEach((h) => payload.append('highlights[]', h));
+      // Send pins as repeated keys for Rails strong params
+      // Send pins as repeated keys for Rails strong params (array of hashes)
+      formData.pins.forEach(pin => {
+        payload.append('pins[][lat]', String(pin.latitude));
+        payload.append('pins[][lng]', String(pin.longitude));
+      });
+      formData.method.forEach((m, idx) => payload.append(`methods[]`, m));
 
       // Cover image logic
       if (imageFile) {
@@ -682,21 +673,26 @@ export default function CreateTrip() {
             </div>
 
             <div>
-              <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-1">
-                Difficulty Level
-              </label>
-              <select
-                id="difficulty"
-                name="difficulty"
-                value={formData.difficulty}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
-                required
-              >
-                <option value="easy">Easy</option>
-                <option value="moderate">Moderate</option>
-                <option value="difficult">Difficult</option>
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+              <div className="flex gap-2">
+                {[
+                  { label: 'Easy', value: 'easy' },
+                  { label: 'Moderate', value: 'moderate' },
+                  { label: 'Hard', value: 'hard' },
+                ].map(({ label, value }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`px-4 py-2 rounded-full border text-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange
+                      ${formData.difficulty === value
+                        ? 'bg-brand-orange text-white border-brand-orange shadow'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                    onClick={() => setFormData((prev) => ({ ...prev, difficulty: value as 'easy' | 'moderate' | 'hard' }))}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>
@@ -965,15 +961,22 @@ export default function CreateTrip() {
                     <div
                       key={idx}
                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm flex flex-col"
-                      onClick={() => {
-                        setFormData(prev => ({
+                    onClick={() => {
+                      setFormData(prev => {
+                        // Avoid duplicate pins (same lat/lng)
+                        const exists = prev.pins.some(
+                          pin => pin.latitude === parseFloat(loc.lat) && pin.longitude === parseFloat(loc.lon)
+                        );
+                        if (exists) return prev;
+                        return {
                           ...prev,
                           pins: [...prev.pins, { latitude: parseFloat(loc.lat), longitude: parseFloat(loc.lon) }]
-                        }));
-                        setLocationSearch('');
-                        setLocationResults([]);
-                        setShowLocationResults(false);
-                      }}
+                        };
+                      });
+                      setLocationSearch('');
+                      setLocationResults([]);
+                      setShowLocationResults(false);
+                    }}
                     >
                       <span className="font-medium text-gray-800 truncate">{loc.display_name.split(',')[0]}</span>
                       <span className="text-xs text-gray-500 truncate">{loc.display_name}</span>

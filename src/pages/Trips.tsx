@@ -50,6 +50,21 @@ const normalizeTrip = (trip: any) => {
     }
   }
 
+  // Normalize pins: always provide lat/lng as numbers if present
+  let normalizedPins = [];
+  if (Array.isArray(trip.pins)) {
+    normalizedPins = trip.pins.map((pin: any) => {
+      // Accept lat/lng or latitude/longitude, coerce to number if present
+      const lat = pin.lat !== undefined ? pin.lat : pin.latitude;
+      const lng = pin.lng !== undefined ? pin.lng : pin.longitude;
+      return {
+        ...pin,
+        lat: lat !== undefined ? Number(lat) : undefined,
+        lng: lng !== undefined ? Number(lng) : undefined,
+      };
+    });
+  }
+
   return {
     ...trip,
     // Always use string for trip_id, use id as is
@@ -108,6 +123,9 @@ const normalizeTrip = (trip: any) => {
       highlights: trip.highlights || [],
       totalCost: (trip.cost && trip.cost.amount) || undefined,
     },
+
+    // Normalized pins (with lat/lng as numbers)
+    pins: normalizedPins,
   };
 };
 
