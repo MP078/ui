@@ -2,14 +2,12 @@ import React, { useState, useEffect } from "react";
 import { X, Calendar, Users, MapPin, DollarSign } from "lucide-react";
 // --- MapSection: Client-only dynamic import for react-leaflet/leaflet ---
 function MapSection({ pins }: { pins: Array<{ lat: number; lng: number; label?: string }> }) {
-  // All hooks at the top
   const [leaflet, setLeaflet] = React.useState<any>(null);
   const [reactLeaflet, setReactLeaflet] = React.useState<any>(null);
   const [ready, setReady] = React.useState(false);
   const [routeGeometry, setRouteGeometry] = React.useState<Array<[number, number]>>([]);
   const [routeDistance, setRouteDistance] = React.useState<number>(0);
 
-  // Always call hooks, then do conditional logic
   React.useEffect(() => {
     let mounted = true;
     Promise.all([
@@ -25,7 +23,6 @@ function MapSection({ pins }: { pins: Array<{ lat: number; lng: number; label?: 
     return () => { mounted = false; };
   }, []);
 
-  // Fetch OSM route when pins change
   React.useEffect(() => {
     async function fetchRouteOSRM(start: [number, number], end: [number, number]) {
       const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
@@ -69,7 +66,6 @@ function MapSection({ pins }: { pins: Array<{ lat: number; lng: number; label?: 
     }
   }, [JSON.stringify(pins)]);
 
-  // Only after all hooks, do conditional rendering
   if (!ready || !leaflet || !reactLeaflet) {
     return <div className="w-full h-72 flex items-center justify-center bg-gray-100 rounded-lg">Loading map...</div>;
   }
@@ -77,9 +73,6 @@ function MapSection({ pins }: { pins: Array<{ lat: number; lng: number; label?: 
   const { MapContainer, TileLayer, Marker, Polyline, Popup } = reactLeaflet;
   const L = leaflet;
 
-
-
-  // Custom numbered pin icon
   function numberedIcon(number: number) {
     return L.divIcon({
       className: 'custom-pin',
@@ -90,9 +83,7 @@ function MapSection({ pins }: { pins: Array<{ lat: number; lng: number; label?: 
     });
   }
 
-  // Center map on first pin, fallback to India
   const center = pins.length > 0 ? [pins[0].lat, pins[0].lng] : [20.5937, 78.9629];
-
 
   return (
     <div>
@@ -103,7 +94,6 @@ function MapSection({ pins }: { pins: Array<{ lat: number; lng: number; label?: 
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&copy; OpenStreetMap contributors"
           />
-          {/* Draw OSRM route if available */}
           {routeGeometry.length > 1 && (
             <Polyline positions={routeGeometry} color="#ff6600" weight={4} />
           )}
@@ -137,13 +127,17 @@ interface TripDetailModalProps {
   trip: Trip;
 }
 
+
+
 export function TripDetailModal({
   isOpen,
   onClose,
   trip,
 }: TripDetailModalProps) {
+  // All hooks at the top
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
   const [showOrganizerSection, setShowOrganizerSection] = useState(false);
+  const [guideLocations, setGuideLocations] = useState<Array<{ from: string; to: string }>>([]);
 
   // ESC key handler
   useEffect(() => {
@@ -163,6 +157,45 @@ export function TripDetailModal({
       document.body.style.overflow = "";
     };
   }, [isOpen, onClose]);
+
+  // Guide location names effect
+  useEffect(() => {
+    async function fetchAllSegmentNames() {
+      if (!Array.isArray(trip.pins) || trip.pins.length < 2) {
+        setGuideLocations([]);
+        return;
+      }
+      const pinsArr = Array.isArray(trip.pins) ? trip.pins : [];
+      const segments = pinsArr.slice(0, -1).map((pin: any, idx: number) => {
+        const nextPin = pinsArr[idx + 1];
+        const fromLat = pin.lat ?? pin.latitude;
+        const fromLng = pin.lng ?? pin.longitude;
+        const toLat = nextPin.lat ?? nextPin.latitude;
+        const toLng = nextPin.lng ?? nextPin.longitude;
+        return { fromLat, fromLng, toLat, toLng };
+      });
+      const results: { from: string; to: string }[] = await Promise.all(
+        segments.map(async (seg: { fromLat: number; fromLng: number; toLat: number; toLng: number }) => {
+          async function fetchLocationName(lat: number, lng: number) {
+            try {
+              const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+              if (res.ok) {
+                const data = await res.json();
+                return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+              }
+            } catch {}
+            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          }
+          const from = await fetchLocationName(seg.fromLat, seg.fromLng);
+          const to = await fetchLocationName(seg.toLat, seg.toLng);
+          return { from, to };
+        })
+      );
+      setGuideLocations(results);
+    }
+    fetchAllSegmentNames();
+    // Only rerun if pins change
+  }, [JSON.stringify(trip.pins)]);
 
   // Click outside handler
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -194,7 +227,7 @@ export function TripDetailModal({
     trip.destination || trip.title || "Unknown Destination";
   const tripDescription =
     trip.description || "No description provided for this trip.";
-  const tripHighlights = trip.highlights || [];
+  // const tripHighlights = trip.highlights || [];
   const tripCost = trip.cost || "Not specified";
   const tripMembersCount = trip.members_count || 0;
 
@@ -205,32 +238,65 @@ export function TripDetailModal({
         onClick={handleBackdropClick}
       >
         <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto my-auto mx-auto relative">
-          <div className="sticky top-0 z-10 flex justify-end p-4 bg-gradient-to-b from-black/50 to-transparent">
-            <button
-              onClick={onClose}
-              className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
-              aria-label="Close modal"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          {/* Close button in top-right, overlayed, not in a sticky row */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
+            aria-label="Close modal"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
           {/* Hero Image */}
-          <div className="h-full sm:h-64 relative">
+          {/* Hero Image and Status/Meta */}
+          <div className="h-80 relative mb-6">
             <img
               src={trip.cover_image_url || `/placeholders/trip.png`}
               alt={tripDestination}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-            <div className="absolute bottom-4 left-6 text-white">
-              <h2 className="text-xl sm:text-2xl font-semibold mb-2">
-                {tripDestination}
-              </h2>
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4" />
-                <span>Trip ID: T{tripId}</span>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            {/* Main Title and Location */}
+            <div className="absolute bottom-6 left-6 text-white">
+              <h2 className="text-3xl font-bold mb-2">{tripDestination}</h2>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                <span>{trip.location}</span>
               </div>
+            </div>
+            {/* Status, Difficulty, and Trip Status */}
+            <div className="absolute top-6 right-16 flex gap-2">
+              {/* Status (upcoming/ongoing/completed) */}
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                trip.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+                trip.status === 'ongoing' ? 'bg-green-100 text-green-800' :
+                trip.status === 'completed' ? 'bg-gray-200 text-gray-700' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
+              </span>
+              {/* Difficulty */}
+              {trip.difficulty && (
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  trip.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                  trip.difficulty === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                  trip.difficulty === 'difficult' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {trip.difficulty.charAt(0).toUpperCase() + trip.difficulty.slice(1)}
+                </span>
+              )}
+              {/* Trip Status (open/full/in-progress) */}
+              {trip.trip_status && (
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  trip.trip_status === 'open' ? 'bg-green-50 text-green-700 border border-green-200' :
+                  trip.trip_status === 'full' ? 'bg-red-50 text-red-700 border border-red-200' :
+                  trip.trip_status === 'in-progress' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {trip.trip_status.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                </span>
+              )}
             </div>
           </div>
 
@@ -278,29 +344,76 @@ export function TripDetailModal({
               <p className="text-gray-600">{tripDescription}</p>
             </div>
 
-            {/* Highlights & Route Preview side by side */}
+            {/* Highlights */}
+            {Array.isArray(trip.highlights) && trip.highlights.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold mb-3">Trip Highlights</h3>
+                <ul className="space-y-2">
+                  {trip.highlights.map((highlight: string, index: number) => (
+                    <li key={index} className="flex gap-2 items-center align-middle">
+                      <span className="text-brand-orange flex items-center justify-center text-lg">•</span>
+                      <span className="flex items-center text-gray-700">{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Guide & Route Preview side by side */}
             <div className="mb-8 flex flex-col md:flex-row md:gap-8">
-              {trip.highlights && trip.highlights.length > 0 && (
-                <div className="md:w-1/2 mb-6 md:mb-0">
-                  <h3 className="text-xl font-semibold mb-3">Trip Highlights</h3>
-                  <ul className="space-y-2">
-                    {trip.highlights.map((highlight, index) => (
-                      <li key={index} className="flex gap-2 items-center align-middle">
-                        <span className="text-brand-orange flex items-center justify-center text-lg">•</span>
-                        <span className="flex items-center text-gray-700">{highlight}</span>
-                      </li>
-                    ))}
+              {/* Guide Section */}
+              <div className="md:w-1/2 mb-6 md:mb-0">
+                <h3 className="text-xl font-semibold mb-3">Trip Guide</h3>
+                {Array.isArray(trip.pins) && trip.pins.length > 1 && Array.isArray(trip.methods) && trip.methods.length > 0 ? (
+                  <ul className="space-y-2 text-gray-700 text-sm">
+                    {(Array.isArray(trip.pins) ? trip.pins : [])
+                      .slice(0, -1)
+                      .map((pin: any, idx: number, arr: any[]) => {
+                        const nextPin = arr[idx + 1];
+                        // Defensive: skip if nextPin is missing or lat/lng missing
+                        if (!nextPin ||
+                          (typeof pin.lat !== 'number' && typeof pin.latitude !== 'number') ||
+                          (typeof pin.lng !== 'number' && typeof pin.longitude !== 'number') ||
+                          (typeof nextPin.lat !== 'number' && typeof nextPin.latitude !== 'number') ||
+                          (typeof nextPin.lng !== 'number' && typeof nextPin.longitude !== 'number')
+                        ) {
+                          return null;
+                        }
+                        const method = Array.isArray(trip.methods) ? trip.methods[idx] || "unknown method" : "unknown method";
+                        const fromLat = typeof pin.lat === 'number' ? pin.lat : pin.latitude;
+                        const fromLng = typeof pin.lng === 'number' ? pin.lng : pin.longitude;
+                        const toLat = typeof nextPin.lat === 'number' ? nextPin.lat : nextPin.latitude;
+                        const toLng = typeof nextPin.lng === 'number' ? nextPin.lng : nextPin.longitude;
+                        const fromName = guideLocations[idx]?.from || `${fromLat}, ${fromLng}`;
+                        const toName = guideLocations[idx]?.to || `${toLat}, ${toLng}`;
+                        return (
+                          <li key={idx} className="flex flex-col">
+                            <span>
+                              <span className="font-medium">Step {idx + 1}:</span> Go from
+                              <span className="mx-1 text-brand-orange">{fromName}</span>
+                              to
+                              <span className="mx-1 text-brand-orange">{toName}</span>
+                              by <span className="font-semibold">{method}</span>
+                            </span>
+                          </li>
+                        );
+                      })}
                   </ul>
-                </div>
-              )}
+                ) : (
+                  <div className="text-gray-500">Not enough pins or methods to generate a guide.</div>
+                )}
+              </div>
+              {/* Route Preview Section */}
               {Array.isArray(trip.pins) && trip.pins.length > 0 && (
                 <div className="md:w-1/2">
                   <MapSection
-                    pins={trip.pins.map((p, idx) => ({
-                      lat: p.lat ?? p.latitude,
-                      lng: p.lng ?? p.longitude,
-                      label: p.label || `Pin ${idx + 1}`
-                    }))}
+                    pins={trip.pins
+                      .filter((p: any) => (typeof p.lat === 'number' || typeof p.latitude === 'number') && (typeof p.lng === 'number' || typeof p.longitude === 'number'))
+                      .map((p: any, idx: number) => ({
+                        lat: typeof p.lat === 'number' ? p.lat : p.latitude,
+                        lng: typeof p.lng === 'number' ? p.lng : p.longitude,
+                        label: p.label || `Pin ${idx + 1}`
+                      }))}
                   />
                 </div>
               )}

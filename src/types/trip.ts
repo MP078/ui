@@ -27,6 +27,15 @@ export interface Trip {
     organizer_requests?: OrganizerRequest[];
     created_by: string;
     image_urls?: string[];
+    /**
+     * Pins for the trip route. Each pin is a lat/lng point, optionally with a label.
+     * Accepts both {lat, lng, label?} and {latitude, longitude, label?} for backend compatibility.
+     */
+    /**
+     * Travel methods for each segment between pins (e.g., 'car', 'walk', 'train').
+     * Should have length = pins.length - 1 if pins are present.
+     */
+    methods?: string[];
 }
 
 export interface TravelBuddy {
