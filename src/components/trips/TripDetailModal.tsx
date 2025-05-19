@@ -1,5 +1,93 @@
 import React, { useState } from 'react';
 import { X, Calendar, Users, MapPin, DollarSign } from 'lucide-react';
+// --- MapSection: Client-only dynamic import for react-leaflet/leaflet ---
+function MapSection() {
+  const [leaflet, setLeaflet] = React.useState<any>(null);
+  const [reactLeaflet, setReactLeaflet] = React.useState<any>(null);
+  const [ready, setReady] = React.useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      import('leaflet'),
+      import('react-leaflet'),
+    ]).then(([L, RL]) => {
+      if (mounted) {
+        setLeaflet(L);
+        setReactLeaflet(RL);
+        setReady(true);
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  if (!ready || !leaflet || !reactLeaflet) return null;
+  const { MapContainer, TileLayer, Marker, Polyline, Popup } = reactLeaflet;
+  const L = leaflet;
+
+  // Mocked pins (lat/lng, label)
+  const pins = [
+    { lat: 28.6139, lng: 77.209, label: 'Start' },
+    { lat: 28.7041, lng: 77.1025, label: 'Waypoint 1' },
+    { lat: 28.5355, lng: 77.391, label: 'End' },
+  ];
+
+  // Helper to calculate total distance (km) between pins
+  function getTotalDistance(coords: { lat: number; lng: number }[]) {
+    let total = 0;
+    for (let i = 1; i < coords.length; i++) {
+      const a = L.latLng(coords[i - 1].lat, coords[i - 1].lng);
+      const b = L.latLng(coords[i].lat, coords[i].lng);
+      total += a.distanceTo(b);
+    }
+    return total / 1000; // meters to km
+  }
+
+  // Custom numbered pin icon
+  function numberedIcon(number: number) {
+    return L.divIcon({
+      className: 'custom-pin',
+      html: `<div style="background:#ff6600;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1rem;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.15);">${number}</div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    });
+  }
+
+  // Center map on first pin, fallback to India
+  const center = pins.length > 0 ? [pins[0].lat, pins[0].lng] : [20.5937, 78.9629];
+
+  // Polyline route
+  const routeCoords = pins.map(p => [p.lat, p.lng]);
+  const totalDistance = getTotalDistance(pins).toFixed(2);
+
+  return (
+    <div>
+      <h3 className="text-xl font-semibold mb-3">Route Preview</h3>
+      <div className="w-full h-72 rounded-lg overflow-hidden mb-2 border border-gray-200">
+        <MapContainer center={center} zoom={10} style={{ width: '100%', height: '100%' }} scrollWheelZoom={false} dragging={true} zoomControl={true} attributionControl={false}>
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution="&copy; OpenStreetMap contributors"
+          />
+          <Polyline positions={routeCoords} color="#ff6600" weight={4} />
+          {pins.map((pin, idx) => (
+            <Marker
+              key={idx}
+              position={[pin.lat, pin.lng]}
+              icon={numberedIcon(idx + 1)}
+            >
+              <Popup>
+                <span>{pin.label}</span>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
+      <div className="text-gray-700 text-sm">Total Distance: <span className="font-semibold">{totalDistance} km</span></div>
+    </div>
+  );
+}
 import { Trip } from '../../types/trip';
 import { formatDate } from '../../utils/date';
 import { Button } from '../ui/button';
@@ -57,24 +145,23 @@ export function TripDetailModal({ isOpen, onClose, trip }: TripDetailModalProps)
   if (!isOpen) return null;
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-        <div className="bg-white rounded-lg w-full max-w-3xl mx-4 my-8 relative">
-          <div className="absolute top-4 right-4 z-10">
-            <button
-              onClick={onClose}
-              className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-3xl relative max-h-[90vh] flex flex-col overflow-hidden">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
+        {/* Scrollable content including image and details */}
+        <div className="flex-1 overflow-y-auto">
           {/* Hero Image */}
           <div className="h-64 relative">
             <img
               src={trip.imageUrl}
               alt={trip.destination}
-              className="w-full h-full object-cover rounded-t-lg"
+              className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             <div className="absolute bottom-4 left-6 text-white">
@@ -122,17 +209,31 @@ export function TripDetailModal({ isOpen, onClose, trip }: TripDetailModalProps)
               <p className="text-gray-600">{trip.description}</p>
             </div>
 
-            {/* Highlights */}
-            {trip.highlights && trip.highlights.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-medium mb-2">Trip Highlights</h3>
-                <ul className="list-disc list-inside text-gray-600">
-                  {trip.highlights.map((highlight, index) => (
-                    <li key={index}>{highlight}</li>
-                  ))}
-                </ul>
+            {/* About */}
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold mb-3">About</h3>
+              <p className="text-gray-700 leading-relaxed">{trip.description}</p>
+            </div>
+
+            {/* Highlights & Route Preview side by side */}
+            <div className="mb-8 flex flex-col md:flex-row md:gap-8">
+              {trip.highlights && trip.highlights.length > 0 && (
+                <div className="md:w-1/2 mb-6 md:mb-0">
+                  <h3 className="text-xl font-semibold mb-3">Trip Highlights</h3>
+                  <ul className="grid grid-cols-1 md:grid-cols-1 gap-3">
+                    {trip.highlights.map((highlight, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <div className="mt-1 text-brand-orange">•</div>
+                        <span>{highlight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="md:w-1/2">
+                <MapSection />
               </div>
-            )}
+            </div>
 
             {/* Organizers & Travel Buddies Section */}
             <div className="mb-6">
@@ -225,17 +326,16 @@ export function TripDetailModal({ isOpen, onClose, trip }: TripDetailModalProps)
             </div>
           </div>
         </div>
+        <ConfirmationDialog
+          isOpen={showLeaveConfirmation}
+          onClose={() => setShowLeaveConfirmation(false)}
+          onConfirm={confirmLeaveTrip}
+          title="Leave Trip"
+          message={`Are you sure you want to leave the trip to ${trip.destination}? This action cannot be undone.`}
+          confirmText="Leave Trip"
+          type="danger"
+        />
       </div>
-
-      <ConfirmationDialog
-        isOpen={showLeaveConfirmation}
-        onClose={() => setShowLeaveConfirmation(false)}
-        onConfirm={confirmLeaveTrip}
-        title="Leave Trip"
-        message={`Are you sure you want to leave the trip to ${trip.destination}? This action cannot be undone.`}
-        confirmText="Leave Trip"
-        type="danger"
-      />
-    </>
+    </div>
   );
 }
