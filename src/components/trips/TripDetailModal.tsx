@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { X, Calendar, Users, MapPin, DollarSign } from 'lucide-react';
 // --- MapSection: Client-only dynamic import for react-leaflet/leaflet ---
-function MapSection() {
+function MapSection({ pins }: { pins: Array<{ lat: number; lng: number; label?: string }> }) {
+  // All hooks at the top
   const [leaflet, setLeaflet] = React.useState<any>(null);
   const [reactLeaflet, setReactLeaflet] = React.useState<any>(null);
   const [ready, setReady] = React.useState(false);
+  const [routeGeometry, setRouteGeometry] = React.useState<Array<[number, number]>>([]);
+  const [routeDistance, setRouteDistance] = React.useState<number>(0);
 
+  // Always call hooks, then do conditional logic
   React.useEffect(() => {
     let mounted = true;
     Promise.all([
@@ -21,27 +25,59 @@ function MapSection() {
     return () => { mounted = false; };
   }, []);
 
-  if (!ready || !leaflet || !reactLeaflet) return null;
+  // Fetch OSM route when pins change
+  React.useEffect(() => {
+    async function fetchRouteOSRM(start: [number, number], end: [number, number]) {
+      const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data.routes && data.routes.length > 0) {
+        return {
+          geometry: data.routes[0].geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng]),
+          distance: data.routes[0].distance / 1000
+        };
+      }
+      return null;
+    }
+
+    async function fetchMultiSegmentRoute(pins: { lat: number; lng: number }[]) {
+      let totalDistance = 0;
+      let allGeometry: [number, number][] = [];
+      for (let i = 0; i < pins.length - 1; i++) {
+        const start: [number, number] = [pins[i].lat, pins[i].lng];
+        const end: [number, number] = [pins[i + 1].lat, pins[i + 1].lng];
+        const route = await fetchRouteOSRM(start, end);
+        if (route) {
+          if (allGeometry.length > 0) {
+            allGeometry = allGeometry.concat(route.geometry.slice(1));
+          } else {
+            allGeometry = route.geometry;
+          }
+          totalDistance += route.distance;
+        }
+      }
+      setRouteGeometry(allGeometry);
+      setRouteDistance(totalDistance);
+    }
+
+    if (pins.length >= 2) {
+      fetchMultiSegmentRoute(pins);
+    } else {
+      setRouteGeometry([]);
+      setRouteDistance(0);
+    }
+  }, [JSON.stringify(pins)]);
+
+  // Only after all hooks, do conditional rendering
+  if (!ready || !leaflet || !reactLeaflet) {
+    return <div className="w-full h-72 flex items-center justify-center bg-gray-100 rounded-lg">Loading map...</div>;
+  }
+
   const { MapContainer, TileLayer, Marker, Polyline, Popup } = reactLeaflet;
   const L = leaflet;
 
-  // Mocked pins (lat/lng, label)
-  const pins = [
-    { lat: 28.6139, lng: 77.209, label: 'Start' },
-    { lat: 28.7041, lng: 77.1025, label: 'Waypoint 1' },
-    { lat: 28.5355, lng: 77.391, label: 'End' },
-  ];
 
-  // Helper to calculate total distance (km) between pins
-  function getTotalDistance(coords: { lat: number; lng: number }[]) {
-    let total = 0;
-    for (let i = 1; i < coords.length; i++) {
-      const a = L.latLng(coords[i - 1].lat, coords[i - 1].lng);
-      const b = L.latLng(coords[i].lat, coords[i].lng);
-      total += a.distanceTo(b);
-    }
-    return total / 1000; // meters to km
-  }
 
   // Custom numbered pin icon
   function numberedIcon(number: number) {
@@ -57,32 +93,6 @@ function MapSection() {
   // Center map on first pin, fallback to India
   const center = pins.length > 0 ? [pins[0].lat, pins[0].lng] : [20.5937, 78.9629];
 
-  // Polyline route (straight lines)
-  const routeCoords = pins.map(p => [p.lat, p.lng]);
-  const totalDistance = getTotalDistance(pins).toFixed(2);
-
-  // --- Route with curved lines between pins (using Leaflet's arc or geodesic plugin logic) ---
-  // We'll approximate a curve using intermediate points for each segment
-  function getArcPoints(a: [number, number], b: [number, number], numPoints = 30) {
-    // Simple quadratic bezier for demo: control point offset northwards
-    const lat1 = a[0], lng1 = a[1], lat2 = b[0], lng2 = b[1];
-    const offset = 0.15; // adjust for more/less curve
-    const ctrlLat = (lat1 + lat2) / 2 + offset;
-    const ctrlLng = (lng1 + lng2) / 2;
-    const points = [];
-    for (let t = 0; t <= 1; t += 1 / numPoints) {
-      const x = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * ctrlLat + t * t * lat2;
-      const y = (1 - t) * (1 - t) * lng1 + 2 * (1 - t) * t * ctrlLng + t * t * lng2;
-      points.push([x, y]);
-    }
-    return points;
-  }
-
-  // Build all arc segments between pins
-  let arcSegments = [];
-  for (let i = 1; i < pins.length; i++) {
-    arcSegments.push(getArcPoints([pins[i-1].lat, pins[i-1].lng], [pins[i].lat, pins[i].lng]));
-  }
 
   return (
     <div>
@@ -93,10 +103,10 @@ function MapSection() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&copy; OpenStreetMap contributors"
           />
-          {/* Draw curved arcs between pins */}
-          {arcSegments.map((arc, idx) => (
-            <Polyline key={idx} positions={arc} color="#ff6600" weight={4} />
-          ))}
+          {/* Draw OSRM route if available */}
+          {routeGeometry.length > 1 && (
+            <Polyline positions={routeGeometry} color="#ff6600" weight={4} />
+          )}
           {pins.map((pin, idx) => (
             <Marker
               key={idx}
@@ -110,7 +120,7 @@ function MapSection() {
           ))}
         </MapContainer>
       </div>
-      <div className="text-gray-700 text-sm">Total Distance: <span className="font-semibold">{totalDistance} km</span></div>
+      <div className="text-gray-700 text-sm">Total Distance: <span className="font-semibold">{routeDistance.toFixed(2)} km</span></div>
     </div>
   );
 }
@@ -257,7 +267,17 @@ export function TripDetailModal({ isOpen, onClose, trip }: TripDetailModalProps)
                 </div>
               )}
               <div className="md:w-1/2">
-                <MapSection />
+                <MapSection
+                  pins={
+                    trip.pins && trip.pins.length > 0
+                      ? trip.pins.map((p, idx) => ({
+                          lat: p.latitude,
+                          lng: p.longitude,
+                          label: p.label || `Pin ${idx + 1}`
+                        }))
+                      : []
+                  }
+                />
               </div>
             </div>
 

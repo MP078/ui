@@ -364,7 +364,9 @@ export default function CreateTrip() {
         summary: formData.summary,
         createdBy: 'currentUser', // This would come from auth context
         travelBuddies: [],
-        organizers: []
+        organizers: [],
+        pins: formData.pins,
+        method: formData.method,
       };
 
       console.log('Creating trip:', tripData);

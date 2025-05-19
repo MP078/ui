@@ -20,6 +20,27 @@ export interface Trip {
   createdBy: string;
   difficulty?: 'easy' | 'moderate' | 'difficult';
   summary?: TripSummary;
+  /**
+   * Pins for the trip route (used in map route preview). Optional.
+   * Each pin should have latitude, longitude, and optional label.
+   */
+  pins?: Array<{ latitude: number; longitude: number; label?: string }>;
+
+  /**
+   * Travel methods between pins (e.g., walk, drive, bus). Optional.
+   * Should be pins.length - 1 in length if present.
+   */
+  method?: string[];
+
+  /**
+   * Precomputed route geometry as an array of [lat, lng] pairs (for map polyline)
+   */
+  routeGeometry?: Array<[number, number]>;
+
+  /**
+   * Precomputed total route distance in kilometers
+   */
+  routeDistance?: number;
 }
 
 export interface TravelBuddy {

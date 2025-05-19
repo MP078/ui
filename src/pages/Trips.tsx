@@ -133,6 +133,13 @@ const travelGroups = [
   }
 ];
 
+// Example pins array for demo (Kathmandu → Pokhara → Chitwan)
+const demoPins = [
+  { latitude: 27.7172, longitude: 85.3240, label: 'Kathmandu' },
+  { latitude: 28.2096, longitude: 83.9856, label: 'Pokhara' },
+  { latitude: 27.5291, longitude: 84.3542, label: 'Chitwan' },
+];
+
 export default function Trips() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -187,7 +194,8 @@ export default function Trips() {
     const trip = [...upcomingTrips, ...travelHistory].find(t => t.tripId === tripId);
     
     if (trip) {
-      setSelectedTrip(trip);
+      // Inject pins for demo; in real app, pins would come from trip data
+      setSelectedTrip({ ...trip, pins: demoPins });
       setIsDetailModalOpen(true);
     }
   };
@@ -195,13 +203,14 @@ export default function Trips() {
   const handleViewSummary = (tripId: string) => {
     const trip = [...upcomingTrips, ...travelHistory].find(t => t.tripId === tripId);
     if (trip && trip.summary) {
-      setSelectedTrip(trip);
+      setSelectedTrip({ ...trip, pins: demoPins });
       setIsSummaryModalOpen(true);
     }
   };
 
   const handleReviewTrip = (tripId: string) => {
-    setSelectedTrip(travelHistory.find(t => t.tripId === tripId) || null);
+    const trip = travelHistory.find(t => t.tripId === tripId) || null;
+    setSelectedTrip(trip ? { ...trip, pins: demoPins } : null);
     setIsReviewModalOpen(true);
   };
 
