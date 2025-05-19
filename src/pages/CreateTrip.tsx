@@ -861,7 +861,7 @@ export default function CreateTrip() {
                 {routeGeometry.length > 1 && (
                   <Polyline
                     positions={routeGeometry}
-                    pathOptions={{ color: 'orange', weight: 4 }}
+                    pathOptions={{ color: '#4285F4', weight: 4 }} // Google Maps sky blue
                   />
                 )}
               </MapContainer>
