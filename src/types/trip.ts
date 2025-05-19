@@ -8,7 +8,7 @@ export interface Trip {
     maximum_participants?: number;
     activities?: string[];
     description: string;
-    difficulty?: 'easy' | 'medium' | 'difficult';
+    difficulty?: 'easy' | 'moderate' | 'difficult';
     created_at?: string;
     updated_at?: string;
     can_join?: boolean;
