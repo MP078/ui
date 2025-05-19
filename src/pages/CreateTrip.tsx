@@ -13,6 +13,8 @@
  *
  * This file contains all logic and UI for the trip creation workflow.
  */
+// Update the import path below if your api.ts is in a different location
+import api from '../lib/api'; // Import API client
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
