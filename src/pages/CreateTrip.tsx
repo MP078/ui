@@ -1,25 +1,50 @@
-// CreateTrip page: Allows users to create a new trip with details, pins, and travel methods
+/**
+ * CreateTrip page: Full-featured trip creation form for TravelBuddy
+ *
+ * Features:
+ * - Enter trip details (title, location, dates, participants, description, activities, difficulty, image, highlights, cost)
+ * - Add pins to a map by clicking or searching (OpenStreetMap/Nominatim)
+ * - Visualize the route between pins using real road routing (OSRM API)
+ * - Show total and segment distances
+ * - Remove pins by clicking their marker
+ * - Pins are visually numbered in order
+ * - Enter travel methods for each segment
+ * - Form validation and submission logic
+ *
+ * This file contains all logic and UI for the trip creation workflow.
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
-// Helper: fetch route from OSRM API between two points
+/**
+ * Fetches a route between two points using the OSRM API.
+ * @param start [lat, lng] of the start point
+ * @param end [lat, lng] of the end point
+ * @returns { geometry: [lat, lng][], distance: number } or null if failed
+ */
 async function fetchRouteOSRM(start: [number, number], end: [number, number]) {
-  // OSRM expects lon,lat order
+  // OSRM expects lon,lat order in the URL
   const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = await res.json();
   if (data.routes && data.routes.length > 0) {
+    // Convert [lng, lat] to [lat, lng] for Leaflet
     return {
       geometry: data.routes[0].geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng]),
-      distance: data.routes[0].distance / 1000 // km
+      distance: data.routes[0].distance / 1000 // distance in kilometers
     };
   }
   return null;
 }
 
-// Helper: fetch all segment routes and total distance for a list of pins
+/**
+ * Fetches the full route and total distance for a list of pins (multi-segment trip).
+ * Calls OSRM for each segment and concatenates the geometry.
+ * @param pins Array of { latitude, longitude }
+ * @returns { geometry: [lat, lng][], distance: number }
+ */
 async function fetchMultiSegmentRoute(pins: { latitude: number; longitude: number }[]) {
   let totalDistance = 0;
   let allGeometry: [number, number][] = [];
@@ -41,18 +66,24 @@ async function fetchMultiSegmentRoute(pins: { latitude: number; longitude: numbe
 }
 import 'leaflet/dist/leaflet.css';
 
-// Helper component: Adds a pin to the map when the user clicks on the map
-// Helper component: Adds a pin to the map when the user clicks on the map
+/**
+ * React-leaflet helper component: Adds a pin to the map when the user clicks on the map.
+ * Calls the provided onAddPin callback with the clicked coordinates.
+ */
 function AddPinOnMap({ onAddPin }: { onAddPin: (lat: number, lng: number) => void }) {
   useMapEvents({
     click: (e: any) => {
-      onAddPin(e.latlng.lat, e.latlng.lng); // Fix typo: was e.lsatlng.lng
+      onAddPin(e.latlng.lat, e.latlng.lng); // Add pin at clicked location
     }
   });
   return null;
 }
 
-// Helper function: Fetches location suggestions from OSM Nominatim API for location search
+/**
+ * Fetches location suggestions from OSM Nominatim API for the location search box.
+ * @param query Search string
+ * @returns Array of location suggestion objects
+ */
 async function fetchLocationSuggestions(query: string): Promise<Array<{ display_name: string; lat: string; lon: string; type: string; class: string; address?: any; boundingbox?: string[] }>> {
   if (!query) return [];
   const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&dedupe=1&q=${encodeURIComponent(query)}`;
@@ -249,7 +280,10 @@ export default function CreateTrip() {
     };
   }, [showLocationResults]);
 
-  // Remove a pin by index from pins array
+  /**
+   * Removes a pin by index from the pins array in formData.
+   * Used by clicking a marker on the map.
+   */
   const removePin = (index: number) => {
     setFormData((prev: TripFormData) => ({
       ...prev,
@@ -713,8 +747,9 @@ export default function CreateTrip() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <AddPinOnMap onAddPin={(lat, lng) => setFormData(prev => ({ ...prev, pins: [...prev.pins, { latitude: lat, longitude: lng }] }))} />
+                {/* Render a numbered marker for each pin. Clicking removes the pin. */}
                 {formData.pins.map((pin, idx) => {
-                  // Use a stable divIcon instance for each marker
+                  // Create a custom numbered icon for each pin
                   const icon = L.divIcon({
                     className: 'custom-pin-label',
                     html: `<div style="background: #fff; border: 2px solid #f97316; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #f97316; font-size: 1.1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">${idx + 1}</div>`,
@@ -729,6 +764,7 @@ export default function CreateTrip() {
                       icon={icon}
                       eventHandlers={{
                         click: () => {
+                          // Remove pin on marker click
                           setFormData(prev => ({
                             ...prev,
                             pins: prev.pins.filter((_, i) => i !== idx)
@@ -739,6 +775,7 @@ export default function CreateTrip() {
                   );
                 })}
                 {/* Polyline for actual route between pins (from OSRM) */}
+                {/* Polyline for the actual route between pins (follows roads, not straight lines) */}
                 {routeGeometry.length > 1 && (
                   <Polyline
                     positions={routeGeometry}
@@ -747,12 +784,15 @@ export default function CreateTrip() {
                 )}
               </MapContainer>
             </div>
+            {/* Show total route distance if available */}
             {routeGeometry.length > 1 && (
               <div className="text-sm text-gray-700 font-medium">
                 Route distance: {routeDistance.toFixed(2)} km
               </div>
             )}
-            <div className="text-xs text-gray-500">Click on the map or use the search above to add a pin. Path and distance will be shown on the map.</div>
+            <div className="text-xs text-gray-500">
+              Click on the map or use the search above to add a pin. Path and distance will be shown on the map.
+            </div>
           </div>
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-gray-900">Travel Methods (Between Pins)</h2>
