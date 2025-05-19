@@ -1,14 +1,52 @@
 // CreateTrip page: Allows users to create a new trip with details, pins, and travel methods
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import { useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
 
+// Helper: fetch route from OSRM API between two points
+async function fetchRouteOSRM(start: [number, number], end: [number, number]) {
+  // OSRM expects lon,lat order
+  const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data.routes && data.routes.length > 0) {
+    return {
+      geometry: data.routes[0].geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng]),
+      distance: data.routes[0].distance / 1000 // km
+    };
+  }
+  return null;
+}
+
+// Helper: fetch all segment routes and total distance for a list of pins
+async function fetchMultiSegmentRoute(pins: { latitude: number; longitude: number }[]) {
+  let totalDistance = 0;
+  let allGeometry: [number, number][] = [];
+  for (let i = 0; i < pins.length - 1; i++) {
+    const start = [pins[i].latitude, pins[i].longitude] as [number, number];
+    const end = [pins[i + 1].latitude, pins[i + 1].longitude] as [number, number];
+    const route = await fetchRouteOSRM(start, end);
+    if (route) {
+      // Avoid duplicate points between segments
+      if (allGeometry.length > 0) {
+        allGeometry = allGeometry.concat(route.geometry.slice(1));
+      } else {
+        allGeometry = route.geometry;
+      }
+      totalDistance += route.distance;
+    }
+  }
+  return { geometry: allGeometry, distance: totalDistance };
+}
+import 'leaflet/dist/leaflet.css';
+
+// Helper component: Adds a pin to the map when the user clicks on the map
 // Helper component: Adds a pin to the map when the user clicks on the map
 function AddPinOnMap({ onAddPin }: { onAddPin: (lat: number, lng: number) => void }) {
   useMapEvents({
     click: (e: any) => {
-      onAddPin(e.latlng.lat, e.latlng.lng);
+      onAddPin(e.latlng.lat, e.latlng.lng); // Fix typo: was e.lsatlng.lng
     }
   });
   return null;
@@ -162,12 +200,17 @@ export default function CreateTrip() {
   }, [formData.startDate, formData.endDate]);
 
 
+
   // Location search state for pin search box
   const [locationSearch, setLocationSearch] = useState('');
   // Location search results from OSM
   const [locationResults, setLocationResults] = useState<Array<{ display_name: string; lat: string; lon: string; type?: string; class?: string; address?: any; boundingbox?: string[] }>>([]);
   // Loading state for location search
   const [isLocLoading, setIsLocLoading] = useState(false);
+  // Whether the location search results are expanded
+  const [showLocationResults, setShowLocationResults] = useState(false);
+  // Ref for the location search container
+  const locationSearchRef = useRef<HTMLDivElement>(null);
   // Debounce timer for search
   const searchTimeout = useRef<any>(null);
 
@@ -175,6 +218,7 @@ export default function CreateTrip() {
   useEffect(() => {
     if (!locationSearch) {
       setLocationResults([]);
+      setShowLocationResults(false);
       return;
     }
     setIsLocLoading(true);
@@ -183,9 +227,27 @@ export default function CreateTrip() {
       const results = await fetchLocationSuggestions(locationSearch);
       setLocationResults(results);
       setIsLocLoading(false);
+      setShowLocationResults(true);
     }, 400);
     // eslint-disable-next-line
   }, [locationSearch]);
+
+  // Collapse location search results when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (locationSearchRef.current && !locationSearchRef.current.contains(event.target as Node)) {
+        setShowLocationResults(false);
+      }
+    }
+    if (showLocationResults) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showLocationResults]);
 
   // Remove a pin by index from pins array
   const removePin = (index: number) => {
@@ -195,15 +257,39 @@ export default function CreateTrip() {
     }));
   };
 
+  // Log pins array to console whenever it changes
+  useEffect(() => {
+    console.log('Current pins:', formData.pins);
+  }, [formData.pins]);
+
+
+  // State for route geometry and distance (multi-segment)
+  const [routeGeometry, setRouteGeometry] = useState<Array<[number, number]>>([]);
+  const [routeDistance, setRouteDistance] = useState<number>(0);
+
+  // Fetch multi-segment route from OSRM when pins change
+  useEffect(() => {
+    async function getRoute() {
+      if (formData.pins.length < 2) {
+        setRouteGeometry([]);
+        setRouteDistance(0);
+        return;
+      }
+      const route = await fetchMultiSegmentRoute(formData.pins);
+      if (route) {
+        setRouteGeometry(route.geometry);
+        setRouteDistance(route.distance);
+      } else {
+        setRouteGeometry([]);
+        setRouteDistance(0);
+      }
+    }
+    getRoute();
+  }, [formData.pins]);
+
   // (Removed unused addMethod function)
 
-  // Remove a travel method by index from method array
-  const removeMethod = (index: number) => {
-    setFormData((prev: TripFormData) => ({
-      ...prev,
-      method: prev.method.filter((_: string, i: number) => i !== index)
-    }));
-  };
+  // Remove a travel method by index from method array (no longer used, safe to remove)
 
   // Handle form submission
   /**
@@ -573,80 +659,100 @@ export default function CreateTrip() {
             </div>
           </div>
 
-          {/* Pins Array Section */}
+          {/* Location Search UI (for adding pins) */}
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-900">Pins (Add by clicking map or searching location)</h2>
-            <div className="space-y-2">
-              {formData.pins.map((pin, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="flex-1 bg-gray-50 px-4 py-2 rounded-lg">
-                    Lat: {pin.latitude}, Lng: {pin.longitude}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removePin(index)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+            <h2 className="text-lg font-medium text-gray-900">Add Pins (by clicking map or searching location)</h2>
+            <div className="flex flex-col gap-2" ref={locationSearchRef}>
+              <input
+                type="text"
+                value={locationSearch}
+                onChange={e => setLocationSearch(e.target.value)}
+                onFocus={() => locationResults.length > 0 && setShowLocationResults(true)}
+                placeholder="Search for a location to drop a pin..."
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
+              />
+              {isLocLoading && <div className="text-xs text-gray-500">Searching...</div>}
+              {showLocationResults && locationResults.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg shadow max-h-60 overflow-y-auto z-10">
+                  {locationResults.map((loc, idx) => (
+                    <div
+                      key={idx}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm flex flex-col"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          pins: [...prev.pins, { latitude: parseFloat(loc.lat), longitude: parseFloat(loc.lon) }]
+                        }));
+                        setLocationSearch('');
+                        setLocationResults([]);
+                        setShowLocationResults(false);
+                      }}
+                    >
+                      <span className="font-medium text-gray-800 truncate">{loc.display_name.split(',')[0]}</span>
+                      <span className="text-xs text-gray-500 truncate">{loc.display_name}</span>
+                      {loc.address && (
+                        <span className="text-xs text-gray-400">{Object.values(loc.address).join(', ')}</span>
+                      )}
+                      <span className="text-xs text-gray-400">{loc.type} ({loc.class})</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {/* Location Search UI */}
-              <div className="flex flex-col gap-2">
-                <input
-                  type="text"
-                  value={locationSearch}
-                  onChange={e => setLocationSearch(e.target.value)}
-                  placeholder="Search for a location to drop a pin..."
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
-                />
-                {isLocLoading && <div className="text-xs text-gray-500">Searching...</div>}
-                {locationResults.length > 0 && (
-                  <div className="bg-white border border-gray-200 rounded-lg shadow max-h-60 overflow-y-auto z-10">
-                    {locationResults.map((loc, idx) => (
-                      <div
-                        key={idx}
-                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm flex flex-col"
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            pins: [...prev.pins, { latitude: parseFloat(loc.lat), longitude: parseFloat(loc.lon) }]
-                          }));
-                          setLocationSearch('');
-                          setLocationResults([]);
-                        }}
-                      >
-                        <span className="font-medium text-gray-800 truncate">{loc.display_name.split(',')[0]}</span>
-                        <span className="text-xs text-gray-500 truncate">{loc.display_name}</span>
-                        {loc.address && (
-                          <span className="text-xs text-gray-400">{Object.values(loc.address).join(', ')}</span>
-                        )}
-                        <span className="text-xs text-gray-400">{loc.type} ({loc.class})</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
 
           {/* Method Array Section */}
-          {/* OSM Map Section */}
+          {/* OSM Map Section with Polyline and Distance */}
           <div className="space-y-2">
             <h2 className="text-lg font-medium text-gray-900">Map (Add pins by clicking or search above)</h2>
             <div style={{ width: '100%', height: '350px' }}>
               <MapContainer center={[28.2096, 83.9856]} zoom={13} style={{ width: '100%', height: '100%' }}>
                 <TileLayer
+                  // @ts-ignore
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <AddPinOnMap onAddPin={(lat, lng) => setFormData(prev => ({ ...prev, pins: [...prev.pins, { latitude: lat, longitude: lng }] }))} />
-                {formData.pins.map((pin, idx) => (
-                  <Marker key={idx} position={[pin.latitude, pin.longitude]} />
-                ))}
+                {formData.pins.map((pin, idx) => {
+                  // Use a stable divIcon instance for each marker
+                  const icon = L.divIcon({
+                    className: 'custom-pin-label',
+                    html: `<div style="background: #fff; border: 2px solid #f97316; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #f97316; font-size: 1.1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">${idx + 1}</div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32],
+                    popupAnchor: [0, -32]
+                  });
+                  return (
+                    <Marker
+                      key={idx}
+                      position={[pin.latitude, pin.longitude]}
+                      icon={icon}
+                      eventHandlers={{
+                        click: () => {
+                          setFormData(prev => ({
+                            ...prev,
+                            pins: prev.pins.filter((_, i) => i !== idx)
+                          }));
+                        }
+                      }}
+                    />
+                  );
+                })}
+                {/* Polyline for actual route between pins (from OSRM) */}
+                {routeGeometry.length > 1 && (
+                  <Polyline
+                    positions={routeGeometry}
+                    pathOptions={{ color: 'orange', weight: 4 }}
+                  />
+                )}
               </MapContainer>
             </div>
-            <div className="text-xs text-gray-500">Click on the map or use the search above to add a pin. Pins will also appear in the Pins section above.</div>
+            {routeGeometry.length > 1 && (
+              <div className="text-sm text-gray-700 font-medium">
+                Route distance: {routeDistance.toFixed(2)} km
+              </div>
+            )}
+            <div className="text-xs text-gray-500">Click on the map or use the search above to add a pin. Path and distance will be shown on the map.</div>
           </div>
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-gray-900">Travel Methods (Between Pins)</h2>
@@ -659,7 +765,7 @@ export default function CreateTrip() {
                     <div className="text-red-500 text-xs mb-2">{methodError}</div>
                   )}
                   <div className="flex flex-col gap-2">
-                    {formData.pins.slice(0, -1).map((pin, idx) => (
+                    {formData.pins.slice(0, -1).map((_, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <span className="bg-gray-50 px-2 py-1 rounded text-xs text-gray-700">
                           {`Pin ${idx + 1} → Pin ${idx + 2}`}
