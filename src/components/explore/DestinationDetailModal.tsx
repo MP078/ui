@@ -17,9 +17,10 @@ export interface Destination {
   highlights?: string[];
   averageCost?: string;
   travelTips?: string[];
+  lat?: string | number;
+  lng?: string | number;
 }
 // Mt. Everest coordinates
-const MAP_COORDS = { lat: 27.9881, lng: 86.9250 };
 
 interface DestinationDetailModalProps {
   isOpen: boolean;
@@ -33,7 +34,21 @@ export function DestinationDetailModal({
   destination
 }: DestinationDetailModalProps) {
   const navigate = useNavigate();
-
+  // Accept both lat/lng and lat/lng from backend
+  const lat = typeof destination.lat !== 'undefined'
+    ? Number(destination.lat)
+    : typeof destination.lat !== 'undefined'
+      ? Number(destination.lat)
+      : undefined;
+  const lng = typeof destination.lng !== 'undefined'
+    ? Number(destination.lng)
+    : typeof destination.lng !== 'undefined'
+      ? Number(destination.lng)
+      : undefined;
+  const hasValidCoords =
+    typeof lat === 'number' && typeof lng === 'number' &&
+    !isNaN(lat) && !isNaN(lng) &&
+    lat !== 0 && lng !== 0;
   if (!isOpen) return null;
 
   const handlePlanTrip = () => {
@@ -65,8 +80,9 @@ export function DestinationDetailModal({
           className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
         >
           <X className="w-5 h-5" />
+   
         </button>
-
+          
         <div className="h-80 relative mb-6">
           <img
             src={destination.image}
@@ -185,16 +201,22 @@ export function DestinationDetailModal({
             <div className="mb-8">
               <h3 className="text-xl font-semibold mb-3">Location Map</h3>
               <div className="w-full rounded-lg overflow-hidden" style={{ minHeight: 250 }}>
-                <iframe
-                  title="OpenStreetMap"
-                  width="100%"
-                  height="250"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${MAP_COORDS.lng-0.15}%2C${MAP_COORDS.lat-0.09}%2C${MAP_COORDS.lng+0.15}%2C${MAP_COORDS.lat+0.09}&layer=mapnik&marker=${MAP_COORDS.lat}%2C${MAP_COORDS.lng}&zoom=10`}
-                />
+                {typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng) ? (
+                  <iframe
+                    title="OpenStreetMap"
+                    width="100%"
+                    height="250"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.15}%2C${lat-0.09}%2C${lng+0.15}%2C${lat+0.09}&layer=mapnik&marker=${lat}%2C${lng}&zoom=10`}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    Location data not available.
+                  </div>
+                )}
               </div>
             </div>
 

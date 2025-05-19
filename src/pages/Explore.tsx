@@ -152,6 +152,11 @@ const fetchDestinations = async (): Promise<Destination[]> => {
       highlights: item.highlights || [],
       averageCost: item.average_cost,
       travelTips: item.travel_tips || [],
+      lat: item.lat, // <-- use item.lat
+      lng: item.lng, // <-- use item.lng
+      // Optionally, also map latitude/longitude for compatibility:
+      latitude: item.lat,
+      longitude: item.lng,
     }));
 
     return destinations;
