@@ -400,39 +400,26 @@ export default function CreateTrip() {
       const formattedCost = `${currencySymbol} ${formData.cost.amount}`;
 
       // Create FormData for API
-      const formDataToSend = new FormData();
-      formDataToSend.append("title", formData.title);
-      formDataToSend.append("location", formData.location);
-      formDataToSend.append("start_date", formData.startDate);
-      formDataToSend.append("end_date", formData.endDate);
-      formDataToSend.append("maximum_participants", formData.maxParticipants.toString());
-      formDataToSend.append("description", formData.description);
-      formDataToSend.append("difficulty", formData.difficulty);
-      formDataToSend.append("cost", formattedCost);
+      const payload = {
+        title: formData.title,
+        location: formData.location,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        maximum_participants: formData.maxParticipants,
+        description: formData.description,
+        activities: formData.activities,
+        difficulty: formData.difficulty,
+        cost: formattedCost,
+        highlights: formData.highlights,
+        cover_image_url: formData.image,
+        pins: formData.pins.map(pin => ({ lat: pin.latitude, lng: pin.longitude })),
+        methods: formData.method, // <-- use 'methods' and the array directly
+      };
 
-      formData.activities.forEach((activity) => {
-        formDataToSend.append("activities[]", activity);
-      });
-      formData.highlights.forEach((highlight) => {
-        formDataToSend.append("highlights[]", highlight);
-      });
-
-      // Handle image upload (URL only, since file upload is not in this version)
-      if (formData.image) {
-        formDataToSend.append("cover_image_url", formData.image);
-        console.log("Using image URL:", formData.image);
-      }
-
-
-      // Add pins and methods arrays as JSON strings
-      formDataToSend.append("pins", JSON.stringify(formData.pins));
-      formDataToSend.append("method", JSON.stringify(formData.method));
-      console.log("Trip data being sent to API (FormData)", formDataToSend);
-      console.log("Pins:", formData.pins);
-      console.log("Methods:", formData.method);
+      console.log("Trip data being sent to API (payload)", payload);
 
       // API call
-      const response = await api.post("/trips", formDataToSend);
+      const response = await api.post("/trips", payload);
       console.log("Trip created successfully:", response.data);
 
       //navigate("/trips");
