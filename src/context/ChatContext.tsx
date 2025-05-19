@@ -19,6 +19,7 @@ interface ChatContextType {
   setSelectedChat: React.Dispatch<React.SetStateAction<string | null>>;
   messages: ChatMessageUI[];
   sendMessage: (chatId: string, message: string) => void;
+  markAsRead: (chatId: string) => void;
   currentUserId: string;
 }
 
@@ -28,7 +29,15 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [chatList, setChatList] = useState<ChatListItem[]>([]);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessageUI[]>([]);
-  const subscriptionsRef = useRef<Record<string, Subscription>>({});
+  const subscriptionsRef = useRef<
+    Record<
+      string,
+      Subscription & {
+        sendMessage?: (data: object) => void;
+        markAsRead?: () => void;
+      }
+    >
+  >({});
   const { user } = useReactContext(UserContext);
   const currentUserId = user?.id || "";
 
@@ -85,6 +94,17 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     const subscription = createChatSubscription(
       selectedChat,
       (data: unknown) => {
+        // Type guard for expected data shape
+        if (typeof data === "object" && data !== null && "action" in data) {
+          const action = (data as { action: string }).action;
+          if (action === "messages_read") {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.isOwn ? msg : { ...msg, status: "read" }))
+            );
+            return;
+          }
+        }
+        // Assume it's a new message
         const chatMessage = data as ChatMessage;
         setMessages((prev) => [
           ...prev,
@@ -121,13 +141,17 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   }, [selectedChat, chatList, user]);
 
   const sendMessage = (chatId: string, message: string) => {
-    const subscription = subscriptionsRef.current[chatId] as Subscription & {
-      sendMessage?: (data: object) => void;
-    };
+    const subscription = subscriptionsRef.current[chatId];
     if (subscription && typeof subscription.sendMessage === "function") {
       subscription.sendMessage({ content: message });
     }
-    // Remove REST fallback and optimistic UI update for pure socket chat
+  };
+
+  const markAsRead = (chatId: string) => {
+    const subscription = subscriptionsRef.current[chatId];
+    if (subscription && typeof subscription.markAsRead === "function") {
+      subscription.markAsRead();
+    }
   };
 
   return (
@@ -138,6 +162,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         setSelectedChat,
         messages,
         sendMessage,
+        markAsRead,
         currentUserId,
       }}
     >

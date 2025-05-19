@@ -1,6 +1,7 @@
 import React from "react";
 import { MapPin, Users } from "lucide-react";
 import { ConnectButton } from "../ui/connect-button";
+import { Link } from "react-router-dom";
 
 export interface TravelerCardProps {
   username: string;
@@ -51,11 +52,13 @@ export const TravelerCard: React.FC<TravelerCardProps> = ({
     <div className="bg-white rounded-lg p-6 shadow-sm">
       <div className="flex items-center gap-4">
         <div className="relative cursor-pointer">
-          <img
-            src={image}
-            alt={name}
-            className="w-16 h-16 rounded-full object-cover"
-          />
+          <Link to={`/${id}`}>
+            <img
+              src={image}
+              alt={name}
+              className="w-16 h-16 rounded-full object-cover"
+            />
+          </Link>
           <div
             className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
               isOnline ? "bg-green-500" : "bg-gray-400"
@@ -63,16 +66,18 @@ export const TravelerCard: React.FC<TravelerCardProps> = ({
           />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-lg cursor-pointer hover:text-brand-orange">
-            {name}
-          </h3>
+          <Link to={`/${id}`}>
+            <h3 className="font-semibold text-lg cursor-pointer hover:text-brand-orange">
+              {name}
+            </h3>
+          </Link>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <MapPin className="w-4 h-4" />
             <span>{location}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
             <Users className="w-4 h-4" />
-            <span>{mutualConnections} mutual connections</span>
+            <span>{mutualConnections} connections</span>
           </div>
         </div>
       </div>

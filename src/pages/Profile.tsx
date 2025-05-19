@@ -52,9 +52,9 @@ export default function Profile() {
         <div className="px-8 mt-8">
           <PostInput />
         </div>
-        <div className="px-8 mt-8">
+        {/* <div className="px-8 mt-8">
           <UpcomingTrips />
-        </div>
+        </div> */}
         <ProfileNav />
 
         <div className="grid grid-cols-12 gap-8 p-8">

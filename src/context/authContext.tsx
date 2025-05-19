@@ -45,7 +45,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    await auth.login(email, password);
+    const response = await auth.login(email, password);
+    const token = response.headers?.["access-token"];
+
+    if (token) {
+      localStorage.setItem("token", token);
+    }
     setAuthenticated(true);
   };
 
@@ -54,12 +59,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     password: string;
     name: string;
   }) => {
-    await auth.register(userData);
+    const response = await auth.register(userData);
+    const token = response.headers?.["access-token"];
+
+    if (token) {
+      localStorage.setItem("token", token);
+    }
     setAuthenticated(true);
   };
 
   const logout = async () => {
     await auth.logout();
+    localStorage.removeItem("token");
     setAuthenticated(false);
   };
 

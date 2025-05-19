@@ -10,14 +10,14 @@ export default function SuggestedBuddies() {
 
   const fetchTravelers = async () => {
     try {
-      const res = await api.get("/users?all=true");
+      const res = await api.get("/users?suggested=true");
       const data = res.data.data;
 
       const travelers = data.map((user: any) => ({
         id: user.id,
         username: user.username,
         name: user.name,
-        image: user.profile_image || "https://via.placeholder.com/150",
+        image: user.profile_image || `/avatars/${getAvatarNumber(user.id)}.png`,
         location: user.location || "Unknown",
         mutualConnections: user.connections || 0,
         interests: user.interests || [],
@@ -63,40 +63,49 @@ export default function SuggestedBuddies() {
   return (
     <div className="bg-white rounded-lg p-4 mt-4">
       <h3 className="font-semibold mb-4">Suggested Travel Buddies</h3>
-      {buddies.slice(0, 3).map((buddy) => (
-        <div key={buddy.id} className="flex items-center justify-between mb-4">
-          <Link to={buddy.username}>
-            <div className="flex items-center gap-3">
-              <img
-                src={
-                  buddy.image &&
-                  !buddy.image.startsWith("https://via.placeholder.com") &&
-                  buddy.image.trim() !== ""
-                    ? buddy.image
-                    : `/avatars/${getAvatarNumber(String(buddy.id))}.png`
-                }
-                alt={buddy.name}
-                className="w-10 h-10 rounded-full"
-              />
-              <div>
-                <div className="font-medium">{buddy.name}</div>
-                <div className="text-sm text-gray-600">{buddy.location}</div>
-              </div>
-            </div>
-          </Link>
-          <ConnectButton
-            name={buddy.name || "Unknown"}
-            username={buddy.username}
-            status={buddy.connectionStatus}
-            size="sm"
-            onConnect={handleConnect}
-            onDisconnect={handleDisconnect}
-            onCancel={function (): void {
-              throw new Error("Function not implemented.");
-            }}
-          />
+      {buddies.length === 0 ? (
+        <div className="text-gray-500 text-sm italic">
+          Fill your details to let others know about you.
         </div>
-      ))}
+      ) : (
+        buddies.slice(0, 3).map((buddy) => (
+          <div
+            key={buddy.id}
+            className="flex items-center justify-between mb-4"
+          >
+            <Link to={buddy.username}>
+              <div className="flex items-center gap-3">
+                <img
+                  src={
+                    buddy.image &&
+                    !buddy.image.startsWith("https://via.placeholder.com") &&
+                    buddy.image.trim() !== ""
+                      ? buddy.image
+                      : `/avatars/${getAvatarNumber(String(buddy.id))}.png`
+                  }
+                  alt={buddy.name}
+                  className="w-10 h-10 rounded-full"
+                />
+                <div>
+                  <div className="font-medium">{buddy.name}</div>
+                  <div className="text-sm text-gray-600">{buddy.location}</div>
+                </div>
+              </div>
+            </Link>
+            <ConnectButton
+              name={buddy.name || "Unknown"}
+              username={buddy.username}
+              status={buddy.connectionStatus}
+              size="sm"
+              onConnect={handleConnect}
+              onDisconnect={handleDisconnect}
+              onCancel={function (): void {
+                throw new Error("Function not implemented.");
+              }}
+            />
+          </div>
+        ))
+      )}
     </div>
   );
 }
