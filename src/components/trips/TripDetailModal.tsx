@@ -138,6 +138,37 @@ export function TripDetailModal({
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
   const [showOrganizerSection, setShowOrganizerSection] = useState(false);
   const [guideLocations, setGuideLocations] = useState<Array<{ from: string; to: string }>>([]);
+  // For Trip Guide OSM addresses
+  const pins = (trip as any).pins;
+  const methods = Array.isArray((trip as any).methods)
+    ? (trip as any).methods
+    : Array.isArray((trip as any).method)
+      ? (trip as any).method
+      : [];
+  const [addresses, setAddresses] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    async function fetchAddresses() {
+      if (!Array.isArray(pins) || pins.length < 2) {
+        setAddresses([]);
+        return;
+      }
+      const getAddress = async (lat: number, lng: number) => {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+          if (res.ok) {
+            const data = await res.json();
+            return data.display_name || `${lat}, ${lng}`;
+          }
+        } catch {}
+        return `${lat}, ${lng}`;
+      };
+      const results: string[] = await Promise.all(
+        pins.map((pin: any) => getAddress(pin.lat ?? pin.latitude, pin.lng ?? pin.longitude))
+      );
+      setAddresses(results);
+    }
+    fetchAddresses();
+  }, [JSON.stringify(pins)]);
 
   // ESC key handler
   useEffect(() => {
@@ -364,40 +395,25 @@ export function TripDetailModal({
               {/* Guide Section */}
               <div className="md:w-1/2 mb-6 md:mb-0">
                 <h3 className="text-xl font-semibold mb-3">Trip Guide</h3>
-                {Array.isArray(trip.pins) && trip.pins.length > 1 && Array.isArray(trip.methods) && trip.methods.length > 0 ? (
+                {Array.isArray(pins) && pins.length > 1 && methods.length > 0 ? (
                   <ul className="space-y-2 text-gray-700 text-sm">
-                    {(Array.isArray(trip.pins) ? trip.pins : [])
-                      .slice(0, -1)
-                      .map((pin: any, idx: number, arr: any[]) => {
-                        const nextPin = arr[idx + 1];
-                        // Defensive: skip if nextPin is missing or lat/lng missing
-                        if (!nextPin ||
-                          (typeof pin.lat !== 'number' && typeof pin.latitude !== 'number') ||
-                          (typeof pin.lng !== 'number' && typeof pin.longitude !== 'number') ||
-                          (typeof nextPin.lat !== 'number' && typeof nextPin.latitude !== 'number') ||
-                          (typeof nextPin.lng !== 'number' && typeof nextPin.longitude !== 'number')
-                        ) {
-                          return null;
-                        }
-                        const method = Array.isArray(trip.methods) ? trip.methods[idx] || "unknown method" : "unknown method";
-                        const fromLat = typeof pin.lat === 'number' ? pin.lat : pin.latitude;
-                        const fromLng = typeof pin.lng === 'number' ? pin.lng : pin.longitude;
-                        const toLat = typeof nextPin.lat === 'number' ? nextPin.lat : nextPin.latitude;
-                        const toLng = typeof nextPin.lng === 'number' ? nextPin.lng : nextPin.longitude;
-                        const fromName = guideLocations[idx]?.from || `${fromLat}, ${fromLng}`;
-                        const toName = guideLocations[idx]?.to || `${toLat}, ${toLng}`;
-                        return (
-                          <li key={idx} className="flex flex-col">
-                            <span>
-                              <span className="font-medium">Step {idx + 1}:</span> Go from
-                              <span className="mx-1 text-brand-orange">{fromName}</span>
-                              to
-                              <span className="mx-1 text-brand-orange">{toName}</span>
-                              by <span className="font-semibold">{method}</span>
-                            </span>
-                          </li>
-                        );
-                      })}
+                    {pins.slice(0, -1).map((pin: any, idx: number) => {
+                      const nextPin = pins[idx + 1];
+                      const method = methods[idx] || "unknown method";
+                      const fromAddress = addresses[idx] || `${pin.lat ?? pin.latitude}, ${pin.lng ?? pin.longitude}`;
+                      const toAddress = addresses[idx + 1] || `${nextPin.lat ?? nextPin.latitude}, ${nextPin.lng ?? nextPin.longitude}`;
+                      return (
+                        <li key={idx} className="flex flex-col">
+                          <span>
+                            <span className="font-medium">Step {idx + 1}:</span> Go from
+                            <span className="mx-1 text-brand-orange">{fromAddress}</span>
+                            to
+                            <span className="mx-1 text-brand-orange">{toAddress}</span>
+                            by <span className="font-semibold">{method}</span>
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <div className="text-gray-500">Not enough pins or methods to generate a guide.</div>

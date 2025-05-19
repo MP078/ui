@@ -519,7 +519,11 @@ export default function Trips() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">My Travel Map</h2>
           </div>
-          <div className="bg-white rounded-lg p-0 h-[400px] overflow-hidden">
+          <div
+            className={`bg-white rounded-lg p-0 h-[400px] overflow-hidden transition-all duration-200 ${
+              (isDetailModalOpen || isSummaryModalOpen) ? 'pointer-events-none opacity-40 select-none' : ''
+            }`}
+          >
             {/* OpenStreetMap with trip markers */}
             <MapContainer center={[27.7, 85.3]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
               <TileLayer

@@ -48,7 +48,7 @@ export function TripSummaryModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4 sm:p-6"
       role="dialog"
       aria-labelledby="modal-title"
       aria-modal="true"
@@ -114,10 +114,10 @@ export function TripSummaryModal({
             <h3 className="font-medium mb-2 sm:mb-3">Photos</h3>
             {photos.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {photos.map((photo, index) => (
+                {photos.filter((photo) => typeof photo === 'string' && photo.trim() !== '').map((photo, index) => (
                   <div
                     key={index}
-                    className="aspect-square rounded-lg overflow-hidden"
+                    className="aspect-square rounded-lg overflow-hidden bg-gray-100"
                   >
                     <img
                       src={photo}
@@ -125,8 +125,9 @@ export function TripSummaryModal({
                       className="w-full h-full object-cover"
                       loading="lazy"
                       onError={(e) => {
-                        // Replace broken images with placeholder
-                        e.currentTarget.src = "/placeholder/trip.png";
+                        if (e.currentTarget.src !== window.location.origin + '/placeholder/trip.png') {
+                          e.currentTarget.src = '/placeholder/trip.png';
+                        }
                       }}
                     />
                   </div>

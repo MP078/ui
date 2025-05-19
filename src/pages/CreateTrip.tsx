@@ -695,173 +695,158 @@ export default function CreateTrip() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image</label>
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    id="image"
-                    name="image"
-                    value={formData.image}
-                    onChange={e => {
-                      setFormData(prev => ({ ...prev, image: e.target.value }));
+            {/* Cover Photo Section - visually distinct, large, no highlight overlays */}
+            {(imageFile || (formData.image && formData.image.startsWith('http'))) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cover Photo</label>
+                <div className="w-full aspect-[3/1] bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center relative overflow-hidden mb-2" style={{ minHeight: 180, maxHeight: 320 }}>
+                  <img
+                    src={imageFile ? URL.createObjectURL(imageFile) : formData.image}
+                    alt="Trip Cover Preview"
+                    className="w-full h-full object-cover object-center transition-all duration-200"
+                    style={{ minHeight: 180, maxHeight: 320 }}
+                  />
+                  {/* Remove button (top right) if image present */}
+                  <button
+                    type="button"
+                    className="absolute top-2 right-2 bg-white/80 hover:bg-white border border-gray-300 rounded-full p-1 shadow"
+                    title="Remove cover photo"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, image: '' }));
                       setImageFile(null);
                     }}
-                    className="flex-1 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
-                    placeholder="Enter image URL or upload file"
-                    disabled={!!imageFile}
-                  />
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      ref={fileInputRef}
-                      style={{ display: 'none' }}
-                      onChange={e => {
-                        const file = e.target.files && e.target.files[0];
-                        if (file) {
-                          setImageFile(file);
-                          setFormData(prev => ({ ...prev, image: '' }));
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex items-center gap-1"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <ImageIcon className="w-5 h-5" /> Upload
-                    </Button>
-                  </div>
-                  {(formData.image || imageFile) && (
-                    <button
-                      type="button"
-                      className="bg-white border border-gray-200 rounded-full p-1 shadow hover:bg-gray-100 ml-2"
-                      title="Remove image"
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, image: '' }));
-                        setImageFile(null);
-                      }}
-                    >
-                      <X className="w-4 h-4 text-gray-500" />
-                    </button>
-                  )}
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
                 </div>
-                {/* Preview for file or URL */}
-                {imageFile && (
-                  <div className="mt-2 flex flex-col items-start">
-                    <span className="text-xs text-gray-500 mb-1">Image Preview:</span>
-                    <img
-                      src={URL.createObjectURL(imageFile)}
-                      alt="Trip Cover Preview"
-                      className="rounded-lg border border-gray-200 max-h-48 max-w-full shadow"
-                      style={{ objectFit: 'cover' }}
-                    />
-                  </div>
-                )}
-                {formData.image && formData.image.startsWith('http') && !imageFile && (
-                  <div className="mt-2 flex flex-col items-start">
-                    <span className="text-xs text-gray-500 mb-1">Image Preview:</span>
-                    <img
-                      src={formData.image}
-                      alt="Trip Cover Preview"
-                      className="rounded-lg border border-gray-200 max-h-48 max-w-full shadow"
-                      style={{ objectFit: 'cover' }}
-                      onError={e => (e.currentTarget.style.display = 'none')}
-                    />
-                  </div>
-                )}
+              </div>
+            )}
+            {/* Always show upload controls for cover photo */}
+            <div className="flex gap-2 mt-1 justify-end">
+              <input
+                type="url"
+                id="image"
+                name="image"
+                value={formData.image}
+                onChange={e => {
+                  setFormData(prev => ({ ...prev, image: e.target.value }));
+                  setImageFile(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
+                placeholder="Paste image URL or upload file"
+                disabled={!!imageFile}
+              />
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  onChange={e => {
+                    const file = e.target.files && e.target.files[0];
+                    if (file) {
+                      setImageFile(file);
+                      setFormData(prev => ({ ...prev, image: '' }));
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex items-center gap-1"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImageIcon className="w-5 h-5" /> Upload
+                </Button>
               </div>
             </div>
 
-            {/* Trip Photos (multiple) */}
+            {/* Trip Photos (Gallery) - visually separated, grid/scrollable, robust controls */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Trip Photos</label>
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2 flex-wrap items-center">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    ref={photoInputRef}
-                    style={{ display: 'none' }}
-                    onChange={e => {
-                      const files = Array.from(e.target.files || []);
-                      setPhotoFiles(prev => [...prev, ...files]);
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex items-center gap-1"
-                    onClick={() => photoInputRef.current?.click()}
-                  >
-                    <ImageIcon className="w-5 h-5" /> Upload Photos
-                  </Button>
-                  {photoFiles.map((file, idx) => (
-                    <div key={idx} className="relative inline-block mr-2 mt-2">
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={`Trip Photo ${idx + 1}`}
-                        className="w-16 h-16 object-cover rounded border"
-                      />
-                      <button
-                        type="button"
-                        className="absolute -top-2 -right-2 bg-white border border-gray-300 text-gray-500 rounded-full p-1 shadow"
-                        onClick={() => setPhotoFiles(prev => prev.filter((_, i) => i !== idx))}
-                        aria-label="Remove photo"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                {/* Add photo by link */}
-                <div className="flex gap-2 mt-2">
-                  <input
-                    type="url"
-                    value={newPhotoLink}
-                    onChange={e => setNewPhotoLink(e.target.value)}
-                    placeholder="Paste image URL and press Add"
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      if (newPhotoLink.trim()) {
-                        setPhotoLinks(prev => [...prev, newPhotoLink.trim()]);
-                        setNewPhotoLink('');
-                      }
-                    }}
-                    disabled={!newPhotoLink.trim()}
-                  >
-                    Add
-                  </Button>
-                </div>
-                {/* Show photo links as preview */}
-                <div className="flex gap-2 flex-wrap mt-2">
-                  {photoLinks.map((link, idx) => (
-                    <div key={idx} className="relative inline-block mr-2 mt-2">
-                      <img
-                        src={link}
-                        alt={`Trip Photo Link ${idx + 1}`}
-                        className="w-16 h-16 object-cover rounded border"
-                        onError={e => (e.currentTarget.style.display = 'none')}
-                      />
-                      <button
-                        type="button"
-                        className="absolute -top-2 -right-2 bg-white border border-gray-300 text-gray-500 rounded-full p-1 shadow"
-                        onClick={() => setPhotoLinks(prev => prev.filter((_, i) => i !== idx))}
-                        aria-label="Remove photo link"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              {/* Upload and add by link controls always visible, gallery only if photos present */}
+              <div className="flex gap-2 flex-wrap items-center mb-2 justify-end">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  ref={photoInputRef}
+                  style={{ display: 'none' }}
+                  onChange={e => {
+                    const files = Array.from(e.target.files || []);
+                    setPhotoFiles(prev => [...prev, ...files]);
+                  }}
+                />
+                <input
+                  type="url"
+                  value={newPhotoLink}
+                  onChange={e => setNewPhotoLink(e.target.value)}
+                  placeholder="Paste image URL and press Add"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange min-w-[180px]"
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (newPhotoLink.trim()) {
+                      setPhotoLinks(prev => [...prev, newPhotoLink.trim()]);
+                      setNewPhotoLink('');
+                    }
+                  }}
+                  disabled={!newPhotoLink.trim()}
+                >
+                  Add
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex items-center gap-1"
+                  onClick={() => photoInputRef.current?.click()}
+                >
+                  <ImageIcon className="w-5 h-5" /> Upload Photos
+                </Button>
               </div>
+              {(photoFiles.length > 0 || photoLinks.length > 0) && (
+                <div className="w-full overflow-x-auto">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 min-w-[220px]">
+                    {/* File previews */}
+                    {photoFiles.map((file, idx) => (
+                      <div key={"file-"+idx} className="relative group rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Trip Photo ${idx + 1}`}
+                          className="w-full h-32 object-cover object-center transition-all duration-200"
+                        />
+                        <button
+                          type="button"
+                          className="absolute top-2 right-2 bg-white/80 hover:bg-white border border-gray-300 text-gray-500 rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition"
+                          onClick={() => setPhotoFiles(prev => prev.filter((_, i) => i !== idx))}
+                          aria-label="Remove photo"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {/* Link previews */}
+                    {photoLinks.map((link, idx) => (
+                      <div key={"link-"+idx} className="relative group rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
+                        <img
+                          src={link}
+                          alt={`Trip Photo Link ${idx + 1}`}
+                          className="w-full h-32 object-cover object-center transition-all duration-200"
+                          onError={e => (e.currentTarget.style.display = 'none')}
+                        />
+                        <button
+                          type="button"
+                          className="absolute top-2 right-2 bg-white/80 hover:bg-white border border-gray-300 text-gray-500 rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition"
+                          onClick={() => setPhotoLinks(prev => prev.filter((_, i) => i !== idx))}
+                          aria-label="Remove photo link"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
