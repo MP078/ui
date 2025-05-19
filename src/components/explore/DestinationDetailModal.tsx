@@ -1,5 +1,7 @@
 import React from 'react';
-import { X, MapPin, Star, Calendar, Users, Globe, ArrowRight } from 'lucide-react';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import L from 'leaflet';
+import { X, MapPin, Star, Calendar, ArrowRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +19,9 @@ export interface Destination {
   highlights?: string[];
   averageCost?: string;
   travelTips?: string[];
+  lat?: number;
+  lng?: number;
+// End of Destination interface
 }
 
 interface DestinationDetailModalProps {
@@ -54,6 +59,41 @@ export function DestinationDetailModal({
     }
   };
 
+
+
+// OSM map with a single pin at the given lat/lng
+function OSMSinglePinMap({ lat, lng }: { lat: number; lng: number }) {
+  // Custom marker icon (fixes missing default icon in Leaflet)
+  const markerIcon = L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    shadowSize: [41, 41],
+  });
+  return (
+    <div style={{ width: '100%', height: '100%', minHeight: 180, minWidth: 180 }}>
+      <MapContainer
+        center={[lat, lng]}
+        zoom={11}
+        scrollWheelZoom={true}
+        style={{ width: '100%', height: '100%' }}
+        dragging={true}
+        doubleClickZoom={true}
+        zoomControl={true}
+        attributionControl={true}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+        />
+        <Marker position={[lat, lng]} icon={markerIcon} />
+      </MapContainer>
+    </div>
+  );
+}
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-4xl relative max-h-[90vh] flex flex-col overflow-hidden">
@@ -64,34 +104,37 @@ export function DestinationDetailModal({
           <X className="w-5 h-5" />
         </button>
 
-        <div className="h-80 relative">
-          <img
-            src={destination.image}
-            alt={destination.name}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          
-          <div className="absolute bottom-6 left-6 text-white">
-            <h2 className="text-3xl font-bold mb-2">{destination.name}</h2>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              <span>{destination.location}</span>
+        {/* The image header is now inside the scrollable area, so it scrolls away with content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="h-80 relative">
+            <img
+              src={destination.image}
+              alt={destination.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-6 left-6 text-white">
+              <h2 className="text-3xl font-bold mb-2">{destination.name}</h2>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                <span>{destination.location}</span>
+              </div>
+            </div>
+            <div className="absolute top-6 right-16 flex gap-2">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(destination.difficulty)}`}>
+                {destination.difficulty}
+              </span>
+              <span className="bg-white/90 px-3 py-1 rounded-full text-sm font-medium text-gray-800">
+                {destination.popularity} Popularity
+              </span>
             </div>
           </div>
-          
-          <div className="absolute top-6 right-16 flex gap-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(destination.difficulty)}`}>
-              {destination.difficulty}
-            </span>
-            <span className="bg-white/90 px-3 py-1 rounded-full text-sm font-medium text-gray-800">
-              {destination.popularity} Popularity
-            </span>
-          </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto">
+
+
+
           <div className="p-6">
+            {/* Title, rating, and location */}
             <div className="flex items-center gap-2 mb-6">
               <div className="flex items-center">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -105,33 +148,50 @@ export function DestinationDetailModal({
                   />
                 ))}
               </div>
-              <span className="font-medium">{destination.rating}</span>
+              <span className="font-medium text-lg">{destination.rating}</span>
             </div>
+
 
             <div className="mb-8">
               <h3 className="text-xl font-semibold mb-3">About</h3>
               <p className="text-gray-700 leading-relaxed">{destination.description}</p>
             </div>
 
-            {destination.highlights && (
-              <div className="mb-8">
-                <h3 className="text-xl font-semibold mb-3">Highlights</h3>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {destination.highlights.map((highlight, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <div className="mt-1 text-brand-orange">•</div>
-                      <span>{highlight}</span>
-                    </li>
-                  ))}
-                </ul>
+            <div className="mb-8 flex flex-col md:flex-row md:gap-8">
+              {destination.highlights && (
+                <div className="md:w-1/2 mb-6 md:mb-0">
+                  <h3 className="text-xl font-semibold mb-3">Highlights</h3>
+                  <ul className="grid grid-cols-1 md:grid-cols-1 gap-3">
+                    {destination.highlights.map((highlight: string, index: number) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <div className="mt-1 text-brand-orange">•</div>
+                        <span>{highlight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="md:w-1/2 flex flex-col items-center justify-center">
+                <h3 className="text-xl font-semibold mb-3">Destination Location</h3>
+                <div className="w-full h-72 rounded-lg overflow-hidden mb-2 border border-gray-200 flex items-center justify-center bg-gray-100">
+                  {/* Show OSM map if coordinates are available, else fallback to pin icon */}
+                  {typeof destination.lat === 'number' && typeof destination.lng === 'number' ? (
+                    <OSMSinglePinMap lat={destination.lat} lng={destination.lng} />
+                  ) : (
+                    <span className="text-brand-orange text-4xl">
+                      <MapPin className="w-10 h-10 mx-auto" />
+                    </span>
+                  )}
+                </div>
+                <div className="text-gray-700 text-sm text-center">{destination.location}</div>
               </div>
-            )}
+            </div>
 
             {destination.activities && (
               <div className="mb-8">
                 <h3 className="text-xl font-semibold mb-3">Activities</h3>
                 <div className="flex flex-wrap gap-2">
-                  {destination.activities.map((activity, index) => (
+                  {destination.activities.map((activity: string, index: number) => (
                     <span 
                       key={index} 
                       className="bg-gray-100 px-3 py-1 rounded-full text-gray-700"
@@ -169,7 +229,7 @@ export function DestinationDetailModal({
               <div className="mb-8">
                 <h3 className="text-xl font-semibold mb-3">Travel Tips</h3>
                 <ul className="space-y-2">
-                  {destination.travelTips.map((tip, index) => (
+                  {destination.travelTips.map((tip: string, index: number) => (
                     <li key={index} className="flex items-start gap-2">
                       <div className="mt-1 text-brand-orange">•</div>
                       <span className="text-gray-700">{tip}</span>
@@ -179,17 +239,7 @@ export function DestinationDetailModal({
               </div>
             )}
 
-            <div className="flex justify-between items-center mt-6">
-              <a 
-                href={`https://www.google.com/maps/search/${encodeURIComponent(destination.name + ' ' + destination.location)}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-brand-orange hover:underline"
-              >
-                <Globe className="w-5 h-5" />
-                <span>View on Map</span>
-              </a>
-              
+            <div className="flex justify-end items-center mt-6">
               <Button 
                 onClick={handlePlanTrip}
                 className="flex items-center gap-2"
