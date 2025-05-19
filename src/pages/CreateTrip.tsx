@@ -196,6 +196,12 @@ export default function CreateTrip() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   // Ref for file input (for programmatic click)
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // State for trip photos (multiple)
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [photoLinks, setPhotoLinks] = useState<string[]>([]);
+  const photoInputRef = React.useRef<HTMLInputElement>(null);
+  const [newPhotoLink, setNewPhotoLink] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const destinationDetails = location.state?.destination;
@@ -404,6 +410,7 @@ export default function CreateTrip() {
       }
       const formattedCost = `${currencySymbol} ${formData.cost.amount}`;
 
+
       // Create FormData for API
       // Use FormData to support file/blob uploads
       const payload = new FormData();
@@ -422,10 +429,8 @@ export default function CreateTrip() {
 
       // Cover image logic
       if (imageFile) {
-        // If a file is uploaded, use it
         payload.append('cover_image', imageFile, imageFile.name);
       } else if (formData.image && formData.image.startsWith('http')) {
-        // If a URL is provided, try to fetch and convert to blob
         try {
           const response = await fetch(formData.image);
           const blob = await response.blob();
@@ -434,6 +439,23 @@ export default function CreateTrip() {
         } catch (err) {
           console.warn('Could not fetch image as blob, sending URL instead.');
           payload.append('cover_image', new Blob([formData.image], { type: 'text/plain' }), 'cover_image.txt');
+        }
+      }
+
+      // Trip photos logic (multiple)
+      photoFiles.forEach((file) => {
+        payload.append('images[]', file, file.name);
+      });
+      for (const link of photoLinks) {
+        if (link.startsWith('http')) {
+          try {
+            const response = await fetch(link);
+            const blob = await response.blob();
+            const filename = link.split('/').pop() || 'photo.jpg';
+            payload.append('images[]', blob, filename);
+          } catch (err) {
+            payload.append('images[]', new Blob([link], { type: 'text/plain' }), 'photo_link.txt');
+          }
         }
       }
 
@@ -678,9 +700,7 @@ export default function CreateTrip() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cover Image
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image</label>
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
                   <input
@@ -757,6 +777,94 @@ export default function CreateTrip() {
                     />
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Trip Photos (multiple) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Trip Photos</label>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2 flex-wrap items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    ref={photoInputRef}
+                    style={{ display: 'none' }}
+                    onChange={e => {
+                      const files = Array.from(e.target.files || []);
+                      setPhotoFiles(prev => [...prev, ...files]);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex items-center gap-1"
+                    onClick={() => photoInputRef.current?.click()}
+                  >
+                    <ImageIcon className="w-5 h-5" /> Upload Photos
+                  </Button>
+                  {photoFiles.map((file, idx) => (
+                    <div key={idx} className="relative inline-block mr-2 mt-2">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Trip Photo ${idx + 1}`}
+                        className="w-16 h-16 object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        className="absolute -top-2 -right-2 bg-white border border-gray-300 text-gray-500 rounded-full p-1 shadow"
+                        onClick={() => setPhotoFiles(prev => prev.filter((_, i) => i !== idx))}
+                        aria-label="Remove photo"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {/* Add photo by link */}
+                <div className="flex gap-2 mt-2">
+                  <input
+                    type="url"
+                    value={newPhotoLink}
+                    onChange={e => setNewPhotoLink(e.target.value)}
+                    placeholder="Paste image URL and press Add"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (newPhotoLink.trim()) {
+                        setPhotoLinks(prev => [...prev, newPhotoLink.trim()]);
+                        setNewPhotoLink('');
+                      }
+                    }}
+                    disabled={!newPhotoLink.trim()}
+                  >
+                    Add
+                  </Button>
+                </div>
+                {/* Show photo links as preview */}
+                <div className="flex gap-2 flex-wrap mt-2">
+                  {photoLinks.map((link, idx) => (
+                    <div key={idx} className="relative inline-block mr-2 mt-2">
+                      <img
+                        src={link}
+                        alt={`Trip Photo Link ${idx + 1}`}
+                        className="w-16 h-16 object-cover rounded border"
+                        onError={e => (e.currentTarget.style.display = 'none')}
+                      />
+                      <button
+                        type="button"
+                        className="absolute -top-2 -right-2 bg-white border border-gray-300 text-gray-500 rounded-full p-1 shadow"
+                        onClick={() => setPhotoLinks(prev => prev.filter((_, i) => i !== idx))}
+                        aria-label="Remove photo link"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
