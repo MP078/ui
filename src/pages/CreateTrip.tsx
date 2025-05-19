@@ -376,7 +376,18 @@ export default function CreateTrip() {
       setIsSubmitting(false);
       return;
     }
-      console.log("Form data before submission:", formData);
+
+    // Validate travel methods: must be present for each segment
+    if (formData.pins.length > 1) {
+      const missing = formData.pins.slice(0, -1).some((_, idx) => !formData.method[idx] || formData.method[idx].trim() === '');
+      if (missing) {
+        setMethodError('Please enter a travel method for every segment between pins.');
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    console.log("Form data before submission:", formData);
     try {
       // Validate image URL if using URL as image source
       if (formData.image && formData.image.startsWith("http")) {
@@ -422,7 +433,8 @@ export default function CreateTrip() {
       const response = await api.post("/trips", payload);
       console.log("Trip created successfully:", response.data);
 
-      //navigate("/trips");
+      // Auto-navigate back after successful creation
+      navigate(-1); // Go back to previous page (or use navigate("/trips") if you want to always go to trips list)
     } catch (error) {
       console.error("Error creating trip:", error);
       alert("Failed to create trip.");
@@ -439,7 +451,7 @@ export default function CreateTrip() {
     if (name === 'cost.amount') {
       setFormData(prev => ({
         ...prev,
-        cost: { ...prev.cost, amount: Number(value) }
+        cost: { ...prev.cost, amount: value === '' ? 0 : Number(value) }
       }));
     } else if (name === 'cost.currency') {
       setFormData(prev => ({
@@ -671,7 +683,32 @@ export default function CreateTrip() {
                   placeholder="Enter image URL"
                   required
                 />
+                {/* Show preview and remove button if image URL is present */}
+                {formData.image && formData.image.startsWith('http') && (
+                  <div className="absolute right-0 top-0 flex flex-col items-end z-10">
+                    <button
+                      type="button"
+                      className="mt-2 mr-2 bg-white border border-gray-200 rounded-full p-1 shadow hover:bg-gray-100"
+                      title="Remove image"
+                      onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
+                    >
+                      <X className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                )}
               </div>
+              {formData.image && formData.image.startsWith('http') && (
+                <div className="mt-2 flex flex-col items-start">
+                  <span className="text-xs text-gray-500 mb-1">Image Preview:</span>
+                  <img
+                    src={formData.image}
+                    alt="Trip Cover Preview"
+                    className="rounded-lg border border-gray-200 max-h-48 max-w-full shadow"
+                    style={{ objectFit: 'cover' }}
+                    onError={e => (e.currentTarget.style.display = 'none')}
+                  />
+                </div>
+              )}
             </div>
 
             <div>
@@ -721,12 +758,13 @@ export default function CreateTrip() {
                     type="number"
                     id="cost.amount"
                     name="cost.amount"
-                    value={formData.cost.amount}
+                    value={formData.cost.amount === 0 ? '' : formData.cost.amount}
                     onChange={handleChange}
                     min="0"
                     step="0.01"
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
                     required
+                    placeholder="0"
                   />
                 </div>
               </div>
