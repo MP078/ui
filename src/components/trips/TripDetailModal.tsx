@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import { UserContext } from '../../context/UserContext';
+import { getAvatarUrl } from '../../utils/avatar';
 import { X, Calendar, Users, MapPin, DollarSign } from "lucide-react";
 // --- MapSection: Client-only dynamic import for react-leaflet/leaflet ---
 function MapSection({ pins }: { pins: Array<{ lat: number; lng: number; label?: string }> }) {
@@ -251,7 +253,6 @@ export function TripDetailModal({
         if (onTripLeft) onTripLeft(trip.id);
         onClose();
       } else {
-        // Only show alert for non-2xx status
         alert("Failed to leave trip.");
       }
     } catch (err) {
@@ -261,10 +262,68 @@ export function TripDetailModal({
     }
   };
 
-  const currentUser = "current_username"; // Replace with actual current user
-  const isOrganizer = trip.organizers?.some(
-    (org) => org.username === currentUser
+  // Get current user from context
+  const { user: currentUser } = useContext(UserContext);
+  const isOrganizer = !!currentUser && trip.organizers?.some(
+    (org) => org.username === currentUser.username
   );
+
+  // Remove member state
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  // Build a map from username to trip_participation_id using trip.list
+  const participationMap: Record<string, string> = Array.isArray((trip as any).list)
+    ? (trip as any).list.reduce((acc: Record<string, string>, entry: any) => {
+        if (entry && entry.username && entry.trip_participation_id) {
+          acc[entry.username] = entry.trip_participation_id;
+        }
+        return acc;
+      }, {})
+    : {};
+
+  // Attach participation_id to each member for easy access
+  const initialMembers = Array.isArray(trip.members)
+    ? trip.members.map((m: any) => ({
+        ...m,
+        participation_id: participationMap[m.username] || null,
+      }))
+    : [];
+  const [members, setMembers] = useState<any[]>(initialMembers);
+
+  // Keep members in sync if trip.members changes
+  useEffect(() => {
+    // Rebuild members with participation_id when trip.members or trip.list changes
+    const updatedMembers = Array.isArray(trip.members)
+      ? trip.members.map((m: any) => ({
+          ...m,
+          participation_id: participationMap[m.username] || null,
+        }))
+      : [];
+    setMembers(updatedMembers);
+  }, [trip.members, (trip as any).list]);
+
+  const handleRemoveMember = async (member: any) => {
+    setRemoveError(null);
+    setRemovingMemberId(member.id);
+    try {
+      // Use trip_participation_id from member
+      if (!member.participation_id) {
+        setRemoveError("Cannot remove member: missing participation ID.");
+        setRemovingMemberId(null);
+        return;
+      }
+      const res = await api.delete(`/trips/${trip.id}/trip_participations/${member.participation_id}`);
+      if (res.status >= 200 && res.status < 300) {
+        setMembers((prev) => prev.filter((m) => m.id !== member.id));
+      } else {
+        setRemoveError("Failed to remove member.");
+      }
+    } catch (err) {
+      setRemoveError("Failed to remove member. Please try again.");
+    } finally {
+      setRemovingMemberId(null);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -460,15 +519,53 @@ export function TripDetailModal({
                 {isOrganizer && (
                   <Button
                     variant="outline"
-                    onClick={() =>
-                      setShowOrganizerSection(!showOrganizerSection)
-                    }
+                    onClick={() => setShowOrganizerSection(!showOrganizerSection)}
                   >
-                    {showOrganizerSection
-                      ? "View Members"
-                      : "Manage Organizers"}
+                    {showOrganizerSection ? "View Less" : "View More"}
                   </Button>
                 )}
+              </div>
+              {/* Members List (show at most 3 unless showOrganizerSection is true) */}
+              <div className="space-y-3">
+                {members.length === 0 && <div className="text-gray-500">No members yet.</div>}
+                {(showOrganizerSection ? members : members.slice(0, 3)).map((member) => (
+                  <div key={member.id} className="flex items-center gap-4 bg-gray-50 rounded-lg px-4 py-2">
+                    <img
+                      src={getAvatarUrl({
+                        id: member.id,
+                        username: member.username || member.name,
+                        image_url: member.image_url,
+                        profile_image: member.profile_image || member.image
+                      })}
+                      alt={member.name || member.username}
+                      className="w-10 h-10 rounded-full object-cover border"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{member.name || member.username}</div>
+                      <div className="text-xs text-gray-500 truncate">{member.username}</div>
+                    </div>
+                    {/* Show Remove button if current user is an organizer and not self or another organizer */}
+                    {isOrganizer && currentUser && member.username !== currentUser.username && !trip.organizers?.some((org: any) => org.username === member.username) && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={removingMemberId === member.id}
+                        onClick={() => handleRemoveMember(member)}
+                      >
+                        {removingMemberId === member.id ? "Removing..." : "Remove"}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {/* View More/Less for non-organizer users */}
+                {!isOrganizer && members.length > 3 && !showOrganizerSection && (
+                  <div>
+                    <Button variant="outline" size="sm" onClick={() => setShowOrganizerSection(true)}>
+                      View More
+                    </Button>
+                  </div>
+                )}
+                {removeError && <div className="text-red-500 text-sm mt-2">{removeError}</div>}
               </div>
             </div>
 
