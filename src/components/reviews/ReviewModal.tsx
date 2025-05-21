@@ -77,13 +77,16 @@ export function ReviewModal({ isOpen, onClose, trip, currentUserId, onSubmit }: 
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto"
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       role="dialog"
       aria-labelledby="modal-title"
       aria-modal="true"
     >
-      <div className="bg-white rounded-lg w-full max-w-2xl mx-4 my-8 relative">
+      <div
+        className="bg-white rounded-lg w-full max-w-2xl mx-4 my-8 relative flex flex-col"
+        style={{ maxHeight: '90vh', height: 'auto', minHeight: 320 }}
+      >
         <div className="sticky top-0 bg-white z-10 flex items-center justify-between p-6 border-b rounded-t-lg">
           <h2 id="modal-title" className="text-xl font-semibold">Review Travel Buddy</h2>
           <button
@@ -93,8 +96,7 @@ export function ReviewModal({ isOpen, onClose, trip, currentUserId, onSubmit }: 
             <X className="w-5 h-5" />
           </button>
         </div>
-        
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           {/* Buddy Selection */}
           {selectedBuddyIndex === null ? (
             <div className="space-y-4">
@@ -148,21 +150,19 @@ export function ReviewModal({ isOpen, onClose, trip, currentUserId, onSubmit }: 
                 </div>
 
                 {/* Review Form */}
-                <div className="overflow-y-auto">
-                  <ReviewForm
-                    type="buddy"
-                    tripDetails={{
-                      tripId: trip.tripId,
-                      destination: trip.destination,
-                      startDate: trip.startDate,
-                      endDate: trip.endDate,
-                      buddyName: uniqueMembers[selectedBuddyIndex].name,
-                      buddyImage: uniqueMembers[selectedBuddyIndex].image,
-                      buddyUsername: uniqueMembers[selectedBuddyIndex].username
-                    }}
-                    onSubmit={handleSubmit}
-                  />
-                </div>
+                <ReviewForm
+                  type="buddy"
+                  tripDetails={{
+                    tripId: trip.tripId,
+                    destination: trip.destination,
+                    startDate: trip.startDate,
+                    endDate: trip.endDate,
+                    buddyName: uniqueMembers[selectedBuddyIndex].name,
+                    buddyImage: uniqueMembers[selectedBuddyIndex].image,
+                    buddyUsername: uniqueMembers[selectedBuddyIndex].username
+                  }}
+                  onSubmit={handleSubmit}
+                />
               </>
             )
           )}
