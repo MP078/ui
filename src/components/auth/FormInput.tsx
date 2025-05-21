@@ -1,5 +1,5 @@
-import React from 'react';
-import { FormInputProps } from './types';
+import React from "react";
+import { FormInputProps } from "./types";
 
 export function FormInput({
   id,
@@ -11,7 +11,7 @@ export function FormInput({
   error,
   placeholder,
   required = true,
-  icon
+  icon,
 }: FormInputProps) {
   return (
     <div className="space-y-1">
@@ -33,9 +33,9 @@ export function FormInput({
           required={required}
           placeholder={placeholder}
           className={`
-            w-full px-4 py-2 ${icon ? 'pl-10' : ''}
+            w-full px-4 py-2 ${icon ? "pl-10" : ""}
             border rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange
-            ${error ? 'border-red-500' : 'border-gray-300'}
+            ${error ? "border-red-500" : "border-gray-300"}
           `}
         />
       </div>
