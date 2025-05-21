@@ -40,7 +40,7 @@ interface TripRequestDropdownProps {
   onClose: () => void;
 }
 
-export function TripRequestDropdown({ isOpen }: TripRequestDropdownProps) {
+export function TripRequestDropdown({ isOpen, onClose }: TripRequestDropdownProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -184,6 +184,15 @@ export function TripRequestDropdown({ isOpen }: TripRequestDropdownProps) {
             </div>
           ))
         )}
+      </div>
+      <div className="p-4 border-t text-center">
+        <Link
+          to="/trip-requests"
+          className="text-sm text-brand-orange hover:text-brand-orange/90"
+          onClick={typeof onClose === 'function' ? onClose : undefined}
+        >
+          View All Requests
+        </Link>
       </div>
     </div>
   );

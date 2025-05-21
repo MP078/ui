@@ -104,7 +104,18 @@ function App() {
               )
             }
           />
+         <Route
+            path="/trip-requests"
+            element={
+              authenticated ? (
+                <ConnectionRequests />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
+       
 
         {/* Story modal route (overlay modal when backgroundLocation is set) */}
         {state?.backgroundLocation && (
