@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { ConnectButton } from "./ui/connect-button";
 import { api } from "../lib/api";
@@ -33,24 +34,76 @@ export default function SuggestedBuddies() {
     }
   };
 
-  const handleConnect = (userId: string) => {
+
+
+  // Connect logic using username (not id)
+  const handleConnect = async (username: string) => {
     setBuddies((prev) =>
       prev.map((buddy) =>
-        buddy.id.toString() === userId
+        buddy.username === username
           ? { ...buddy, connectionStatus: "sent" }
           : buddy
       )
     );
+    try {
+      await api.post(`/friendships/${username}`);
+    } catch (error) {
+      // Rollback UI if failed
+      setBuddies((prev) =>
+        prev.map((buddy) =>
+          buddy.username === username
+            ? { ...buddy, connectionStatus: "none" }
+            : buddy
+        )
+      );
+      console.error("Failed to send connection request:", error);
+    }
   };
 
-  const handleDisconnect = (userId: string) => {
+  const handleDisconnect = async (username: string) => {
     setBuddies((prev) =>
       prev.map((buddy) =>
-        buddy.id.toString() === userId
+        buddy.username === username
           ? { ...buddy, connectionStatus: "none" }
           : buddy
       )
     );
+    try {
+      await api.delete(`/friendships/${username}`);
+    } catch (error) {
+      // Rollback UI if failed
+      setBuddies((prev) =>
+        prev.map((buddy) =>
+          buddy.username === username
+            ? { ...buddy, connectionStatus: "friends" }
+            : buddy
+        )
+      );
+      console.error("Failed to disconnect:", error);
+    }
+  };
+
+  const handleCancel = async (username: string) => {
+    setBuddies((prev) =>
+      prev.map((buddy) =>
+        buddy.username === username
+          ? { ...buddy, connectionStatus: "none" }
+          : buddy
+      )
+    );
+    try {
+      await api.delete(`/friendships/${username}`);
+    } catch (error) {
+      // Rollback UI if failed
+      setBuddies((prev) =>
+        prev.map((buddy) =>
+          buddy.username === username
+            ? { ...buddy, connectionStatus: "sent" }
+            : buddy
+        )
+      );
+      console.error("Failed to cancel request:", error);
+    }
   };
 
   useEffect(() => {
@@ -99,9 +152,7 @@ export default function SuggestedBuddies() {
               size="sm"
               onConnect={handleConnect}
               onDisconnect={handleDisconnect}
-              onCancel={function (): void {
-                throw new Error("Function not implemented.");
-              }}
+              onCancel={handleCancel}
             />
           </div>
         ))
