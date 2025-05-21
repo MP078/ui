@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Star } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -61,8 +60,8 @@ export function ReviewForm({ type, tripDetails, onSubmit }: ReviewFormProps) {
     });
 
     // Check comment
-    if (review.comment.length < 20) {
-      newErrors.comment = 'Please provide a more detailed review (minimum 20 characters)';
+    if (review.comment.length < 2) {
+      newErrors.comment = 'Please provide a more detailed review (minimum 2 characters)';
     }
 
     setErrors(newErrors);
@@ -73,12 +72,17 @@ export function ReviewForm({ type, tripDetails, onSubmit }: ReviewFormProps) {
     e.preventDefault();
     if (!validateForm()) return;
 
-    // Prepare FormData for file upload
     const formData = new FormData();
     formData.append('rateable_type', 'User');
-    formData.append('rateable_id', review.buddyUsername); // assuming buddyUsername is the user id
-    formData.append('value', String(review.ratings['overall']));
-    // Attach images if any
+    formData.append('rateable_id', review.buddyUsername); // must be the username
+    formData.append('value', review.ratings['overall'] ? String(review.ratings['overall']) : '');
+    formData.append('overall_experience', review.ratings['overall'] ? String(review.ratings['overall']) : '');
+    formData.append('communication', review.ratings['communication'] ? String(review.ratings['communication']) : '');
+    formData.append('reliability', review.ratings['reliability'] ? String(review.ratings['reliability']) : '');
+    formData.append('travel_compatibility', review.ratings['compatibility'] ? String(review.ratings['compatibility']) : '');
+    formData.append('respect_consideration', review.ratings['respect'] ? String(review.ratings['respect']) : '');
+    formData.append('review', review.comment);
+    formData.append('recommend', review.recommendation === true ? 'true' : 'false');
     if (review.photos && review.photos.length > 0) {
       review.photos.forEach((file) => formData.append('images[]', file));
     }
@@ -113,13 +117,21 @@ export function ReviewForm({ type, tripDetails, onSubmit }: ReviewFormProps) {
   };
 
   const handleRatingChange = (category: string, rating: number) => {
-    setReview(prev => ({
-      ...prev,
-      ratings: {
-        ...prev.ratings,
-        [category]: rating
-      }
-    }));
+    setReview(prev => {
+      const updated = {
+        ...prev,
+        ratings: {
+          ...prev.ratings,
+          [category]: rating
+        }
+      };
+      // Log the review state as JSON after each rating change
+      console.log('Review JSON:', {
+        ...updated,
+        photos: updated.photos ? updated.photos.map(f => f.name) : []
+      });
+      return updated;
+    });
     if (errors[`rating_${category}`]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -131,10 +143,31 @@ export function ReviewForm({ type, tripDetails, onSubmit }: ReviewFormProps) {
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setReview(prev => ({
-      ...prev,
-      photos: [...(prev.photos || []), ...files]
-    }));
+    setReview(prev => {
+      const updated = {
+        ...prev,
+        photos: [...(prev.photos || []), ...files]
+      };
+      // Log the review state as JSON after photo upload
+      console.log('Review JSON:', {
+        ...updated,
+        photos: updated.photos ? updated.photos.map(f => f.name) : []
+      });
+      return updated;
+    });
+  };
+
+  // Log the review state as JSON on every input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setReview(prev => {
+      const updated = { ...prev, comment: value };
+      console.log('Review JSON:', {
+        ...updated,
+        photos: updated.photos ? updated.photos.map(f => f.name) : []
+      });
+      return updated;
+    });
   };
 
   return (
@@ -188,7 +221,7 @@ export function ReviewForm({ type, tripDetails, onSubmit }: ReviewFormProps) {
         </label>
         <textarea
           value={review.comment}
-          onChange={(e) => setReview(prev => ({ ...prev, comment: e.target.value }))}
+          onChange={handleInputChange}
           placeholder="Share your experience traveling with this buddy..."
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
@@ -206,7 +239,14 @@ export function ReviewForm({ type, tripDetails, onSubmit }: ReviewFormProps) {
         <div className="flex gap-4">
           <button
             type="button"
-            onClick={() => setReview(prev => ({ ...prev, recommendation: true }))}
+            onClick={() => setReview(prev => {
+              const updated = { ...prev, recommendation: true };
+              console.log('Review JSON:', {
+                ...updated,
+                photos: updated.photos ? updated.photos.map(f => f.name) : []
+              });
+              return updated;
+            })}
             className={`flex-1 py-2 rounded-lg border transition-colors ${
               review.recommendation
                 ? 'border-green-500 bg-green-50 text-green-700'
@@ -217,7 +257,14 @@ export function ReviewForm({ type, tripDetails, onSubmit }: ReviewFormProps) {
           </button>
           <button
             type="button"
-            onClick={() => setReview(prev => ({ ...prev, recommendation: false }))}
+            onClick={() => setReview(prev => {
+              const updated = { ...prev, recommendation: false };
+              console.log('Review JSON:', {
+                ...updated,
+                photos: updated.photos ? updated.photos.map(f => f.name) : []
+              });
+              return updated;
+            })}
             className={`flex-1 py-2 rounded-lg border transition-colors ${
               review.recommendation === false
                 ? 'border-red-500 bg-red-50 text-red-700'
