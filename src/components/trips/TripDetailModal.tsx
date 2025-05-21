@@ -118,6 +118,7 @@ import { Trip } from "../../types/trip";
 import { formatDate } from "../../utils/date";
 import { Button } from "../ui/button";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
+import { api } from "../../lib/api"; // (at the top if not already imported)
 // Import TripOrganizers if needed in future
 // import { TripOrganizers } from "./TripOrganizers";
 
@@ -125,6 +126,7 @@ interface TripDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   trip: Trip;
+  onTripLeft?: (tripId: string) => void;
 }
 
 
@@ -133,6 +135,7 @@ export function TripDetailModal({
   isOpen,
   onClose,
   trip,
+  onTripLeft,
 }: TripDetailModalProps) {
   // All hooks at the top
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
@@ -237,10 +240,25 @@ export function TripDetailModal({
     setShowLeaveConfirmation(true);
   };
 
-  const confirmLeaveTrip = () => {
-    console.log("Leaving trip:", trip.id);
-    setShowLeaveConfirmation(false);
-    onClose();
+  const [leaving, setLeaving] = useState(false);
+  const confirmLeaveTrip = async () => {
+    setLeaving(true);
+    try {
+      const res = await api.delete(`/trips/${trip.id}/leave`);
+      // Treat any 2xx response as success, regardless of data.success or message
+      if (res.status >= 200 && res.status < 300) {
+        setShowLeaveConfirmation(false);
+        if (onTripLeft) onTripLeft(trip.id);
+        onClose();
+      } else {
+        // Only show alert for non-2xx status
+        alert("Failed to leave trip.");
+      }
+    } catch (err) {
+      alert("Failed to leave trip. Please try again.");
+    } finally {
+      setLeaving(false);
+    }
   };
 
   const currentUser = "current_username"; // Replace with actual current user
@@ -460,10 +478,7 @@ export function TripDetailModal({
                 Close
               </Button>
               <div className="flex gap-4">
-                {trip.status === "completed" &&
-                  trip.review_status === "pending" && (
-                    <Button>Write Review</Button>
-                  )}
+                {/* Review button removed; now handled in Trips.tsx */}
                 {trip.status === "upcoming" && (
                   <Button
                     variant="outline"
@@ -485,8 +500,9 @@ export function TripDetailModal({
         onConfirm={confirmLeaveTrip}
         title="Leave Trip"
         message={`Are you sure you want to leave the trip to ${tripDestination}? This action cannot be undone.`}
-        confirmText="Leave Trip"
+        confirmText={leaving ? "Leaving..." : "Leave Trip"}
         type="danger"
+        disabled={leaving}
       />
     </>
   );

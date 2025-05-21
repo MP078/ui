@@ -16,7 +16,7 @@ export function TripHistoryCard({
   onReview,
 }: TripHistoryCardProps) {
   const showReviewButton =
-    trip.status === "completed" && trip.review_status === "pending";
+    trip.status === "completed";
 
   const getDifficultyColor = (difficulty?: string) => {
     switch (difficulty) {
@@ -128,7 +128,7 @@ export function TripHistoryCard({
         <div className="flex items-center justify-between">
           <Button
             onClick={() => onViewDetails(trip.id)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 px-4 py-2 rounded-full"
           >
             View Full Details
             <ChevronRight className="w-4 h-4" />
@@ -136,12 +136,12 @@ export function TripHistoryCard({
 
           {showReviewButton && (
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => onReview(trip.id)}
-              className="flex items-center gap-2 bg-brand-orange/10 hover:bg-brand-orange/20 border-brand-orange/20 text-brand-orange"
+              className="flex items-center justify-center w-10 h-10 p-0 rounded-full border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:text-orange-700 shadow-sm transition-all duration-150"
+              aria-label="Review this trip"
             >
-              <Star className="w-4 h-4" />
-              Review
+              <Star className="w-5 h-5 text-orange-500" />
             </Button>
           )}
         </div>

@@ -247,12 +247,21 @@ export default function Trips() {
     }
   };
 
+  const { user: currentUser } = useContext(UserContext);
   const handleReviewTrip = (tripId: string) => {
     const trip = tripsData.find(
       (t: any) => t.trip_id === tripId || t.id === tripId
     );
     setSelectedTrip(trip || null);
     setIsReviewModalOpen(true);
+  };
+
+
+  // Remove a trip from state after leaving
+  const handleTripLeft = (tripId: string) => {
+    setTripsData((prev) => prev.filter((t: any) => t.id !== tripId && t.trip_id !== tripId));
+    setIsDetailModalOpen(false);
+    setSelectedTrip(null);
   };
 
   if (!user || loading) return <div>...Loading</div>;
@@ -521,7 +530,7 @@ export default function Trips() {
           </div>
           <div
             className={`bg-white rounded-lg p-0 h-[400px] overflow-hidden transition-all duration-200 ${
-              (isDetailModalOpen || isSummaryModalOpen) ? 'pointer-events-none opacity-40 select-none' : ''
+              (isDetailModalOpen || isSummaryModalOpen || isReviewModalOpen) ? 'pointer-events-none opacity-40 select-none' : ''
             }`}
           >
             {/* OpenStreetMap with trip markers */}
@@ -561,6 +570,7 @@ export default function Trips() {
             isOpen={isDetailModalOpen}
             onClose={() => setIsDetailModalOpen(false)}
             trip={selectedTrip}
+            onTripLeft={handleTripLeft}
           />
           {selectedTrip.summary && (
             <TripSummaryModal
@@ -587,7 +597,8 @@ export default function Trips() {
           <ReviewModal
             isOpen={isReviewModalOpen}
             onClose={() => setIsReviewModalOpen(false)}
-            tripId={selectedTrip.id}
+            trip={selectedTrip}
+            currentUserId={currentUser?.id}
             onSubmit={() => setIsReviewModalOpen(false)}
           />
         </>

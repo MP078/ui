@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { Star } from 'lucide-react';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
+import { api } from '../../lib/api';
 
 interface ReviewFormProps {
   type: 'buddy';
@@ -69,25 +71,44 @@ export function ReviewForm({ type, tripDetails, onSubmit }: ReviewFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      try {
-        const response = await fetch('review_address', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(review)
+    if (!validateForm()) return;
+
+    // Prepare FormData for file upload
+    const formData = new FormData();
+    formData.append('rateable_type', 'User');
+    formData.append('rateable_id', review.buddyUsername); // assuming buddyUsername is the user id
+    formData.append('value', String(review.ratings['overall']));
+    // Attach images if any
+    if (review.photos && review.photos.length > 0) {
+      review.photos.forEach((file) => formData.append('images[]', file));
+    }
+
+    try {
+      // Use centralized api if available, otherwise fallback to fetch
+      let response;
+      if (api && typeof api.post === 'function') {
+        response = await api.post('/ratings', formData, {
+          headers: { 'Content-Type': undefined }, // Let browser set boundary for FormData
+          withCredentials: true,
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to submit review');
+        if (response.status && response.status >= 400) {
+          throw new Error(response.data?.error || (response.data?.errors && response.data.errors[0]) || 'Failed to submit review');
         }
-
-        onSubmit(review);
-      } catch (error) {
-        console.error('Error submitting review:', error);
-        setErrors(prev => ({ ...prev, submit: 'Failed to submit review. Please try again.' }));
+      } else {
+        response = await fetch('/ratings', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || (data.errors && data.errors[0]) || 'Failed to submit review');
+        }
       }
+      onSubmit(review);
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      setErrors(prev => ({ ...prev, submit: 'Failed to submit review. Please try again.' }));
     }
   };
 

@@ -331,9 +331,15 @@ function TravelersList({ filter }: { filter: string }) {
   );
 }
 
+
 const fetchTrips = async () => {
   try {
-    const res = await api.get("/trips");
+    const res = await api.get("/trips", {
+      params: {
+        upcoming: true,
+        user_trips: false,
+      },
+    });
     const data = res.data.data;
 
     const trips = data.map((trip: any) => ({

@@ -1,17 +1,19 @@
+
 import React from 'react';
 import { Star, Heart, Share2, Flag } from 'lucide-react';
+import { getAvatarNumber } from '../../context/UserContext';
+
 
 interface Review {
   id: string;
   author: {
+    id: string;
     name: string;
     image: string;
     date: string;
   };
-  rating: number;
-  comment: string;
-  likes: number;
-  shares: number;
+  value: number; // rating value (1-5)
+  images?: string[]; // optional image URLs
 }
 
 interface ReviewListProps {
@@ -21,7 +23,7 @@ interface ReviewListProps {
   onReport: (id: string) => void;
 }
 
-export function ReviewList({ reviews, onLike, onShare, onReport }: ReviewListProps) {
+export function ReviewList({ reviews }: ReviewListProps) {
   return (
     <div className="space-y-6">
       {reviews.map((review) => (
@@ -29,7 +31,13 @@ export function ReviewList({ reviews, onLike, onShare, onReport }: ReviewListPro
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <img
-                src={review.author.image}
+                src={
+                  review.author.image && review.author.image.trim() !== ''
+                    ? review.author.image
+                    : `/avatars/${getAvatarNumber(
+                        review.author.id || review.author.name || '1'
+                      )}.png`
+                }
                 alt={review.author.name}
                 className="w-12 h-12 rounded-full object-cover"
               />
@@ -43,7 +51,7 @@ export function ReviewList({ reviews, onLike, onShare, onReport }: ReviewListPro
                 <Star
                   key={i}
                   className={`w-4 h-4 ${
-                    i < review.rating
+                    i < review.value
                       ? 'fill-yellow-400 text-yellow-400'
                       : 'text-gray-300'
                   }`}
@@ -52,31 +60,18 @@ export function ReviewList({ reviews, onLike, onShare, onReport }: ReviewListPro
             </div>
           </div>
 
-          <p className="text-gray-700 mb-4">{review.comment}</p>
-
-          <div className="flex items-center gap-6">
-            <button
-              onClick={() => onLike(review.id)}
-              className="flex items-center gap-2 text-gray-600 hover:text-brand-orange"
-            >
-              <Heart className="w-5 h-5" />
-              <span>{review.likes}</span>
-            </button>
-            <button
-              onClick={() => onShare(review.id)}
-              className="flex items-center gap-2 text-gray-600 hover:text-brand-orange"
-            >
-              <Share2 className="w-5 h-5" />
-              <span>{review.shares}</span>
-            </button>
-            <button
-              onClick={() => onReport(review.id)}
-              className="flex items-center gap-2 text-gray-600 hover:text-red-500 ml-auto"
-            >
-              <Flag className="w-5 h-5" />
-              <span>Report</span>
-            </button>
-          </div>
+          {review.images && review.images.length > 0 && (
+            <div className="flex gap-2 mb-4">
+              {review.images.map((img, idx) => (
+                <img
+                  key={idx}
+                  src={img}
+                  alt={`Review image ${idx + 1}`}
+                  className="w-20 h-20 object-cover rounded-lg border"
+                />
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </div>

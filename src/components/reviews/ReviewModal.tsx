@@ -1,16 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { ReviewForm } from './ReviewForm';
+import { getAvatarNumber } from '../../context/UserContext';
 import { travelHistory } from '../../data/upcomingtrips';
 
 interface ReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  tripId?: string;
+  trip: any; // Pass the full trip object
+  currentUserId: string; // Or currentUsername
   onSubmit: (reviewData: any) => void;
 }
 
-export function ReviewModal({ isOpen, onClose, tripId, onSubmit }: ReviewModalProps) {
+export function ReviewModal({ isOpen, onClose, trip, currentUserId, onSubmit }: ReviewModalProps) {
   const [selectedBuddyIndex, setSelectedBuddyIndex] = useState<number | null>(null);
 
   // Reset selection when modal is closed
@@ -20,13 +23,42 @@ export function ReviewModal({ isOpen, onClose, tripId, onSubmit }: ReviewModalPr
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !trip) return null;
 
-  const trip = travelHistory.find(t => t.tripId === tripId);
-  const travelBuddies = trip?.travelBuddies || [];
+  // Combine members and organizers, remove duplicates, filter out current user
+  // Also ensure we have image and username for each member
+  const allMembers = [
+    ...((trip.members || []).map((m: any) => ({
+      id: m.id,
+      name: m.name || m.username || m.displayName || 'Unknown',
+      username: m.username || '',
+      image:
+        m.image_url && m.image_url.trim() !== ''
+          ? m.image_url
+          : m.image && m.image.trim() !== ''
+            ? m.image
+            : `/avatars/${getAvatarNumber(m.id ? String(m.id) : m.username || m.name || '1')}.png`,
+    }))),
+    ...((trip.organizers || []).map((m: any) => ({
+      id: m.id,
+      name: m.name || m.username || m.displayName || 'Unknown',
+      username: m.username || '',
+      image:
+        m.image_url && m.image_url.trim() !== ''
+          ? m.image_url
+          : m.image && m.image.trim() !== ''
+            ? m.image
+            : `/avatars/${getAvatarNumber(m.id ? String(m.id) : m.username || m.name || '1')}.png`,
+    })))
+  ];
+  // Remove duplicates by id and filter out current user
+  const uniqueMembers = allMembers.filter(
+    (member, idx, arr) =>
+      arr.findIndex(m => m.id === member.id) === idx && member.id !== currentUserId
+  );
 
   const handleSubmit = async (reviewData: any) => {
-    if (selectedBuddyIndex === null || !travelBuddies[selectedBuddyIndex]) {
+    if (selectedBuddyIndex === null || !uniqueMembers[selectedBuddyIndex]) {
       console.error('No travel buddy selected');
       return;
     }
@@ -34,9 +66,9 @@ export function ReviewModal({ isOpen, onClose, tripId, onSubmit }: ReviewModalPr
     try {
       await onSubmit({
         ...reviewData,
-        buddyName: travelBuddies[selectedBuddyIndex].name,
-        buddyImage: travelBuddies[selectedBuddyIndex].image,
-        buddyUsername: travelBuddies[selectedBuddyIndex].username
+        buddyName: uniqueMembers[selectedBuddyIndex].name,
+        buddyImage: uniqueMembers[selectedBuddyIndex].image,
+        buddyUsername: uniqueMembers[selectedBuddyIndex].username
       });
       onClose();
     } catch (error) {
@@ -67,9 +99,9 @@ export function ReviewModal({ isOpen, onClose, tripId, onSubmit }: ReviewModalPr
           {selectedBuddyIndex === null ? (
             <div className="space-y-4">
               <h3 className="font-medium text-lg mb-4">Select a travel buddy to review</h3>
-              {travelBuddies.length > 0 ? (
+              {uniqueMembers.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2">
-                  {travelBuddies.map((buddy, index) => (
+                  {uniqueMembers.map((buddy, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedBuddyIndex(index)}
@@ -92,18 +124,18 @@ export function ReviewModal({ isOpen, onClose, tripId, onSubmit }: ReviewModalPr
               )}
             </div>
           ) : (
-            trip && travelBuddies[selectedBuddyIndex] && (
+            trip && uniqueMembers[selectedBuddyIndex] && (
               <>
                 {/* Selected Buddy Info */}
                 <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg mb-6">
                   <img
-                    src={travelBuddies[selectedBuddyIndex].image}
-                    alt={travelBuddies[selectedBuddyIndex].name}
+                    src={uniqueMembers[selectedBuddyIndex].image}
+                    alt={uniqueMembers[selectedBuddyIndex].name}
                     className="w-12 h-12 rounded-full object-cover"
                   />
                   <div>
                     <div className="font-medium">
-                      {travelBuddies[selectedBuddyIndex].name}
+                      {uniqueMembers[selectedBuddyIndex].name}
                     </div>
                     <div className="text-sm text-gray-500">Travel Partner</div>
                   </div>
@@ -124,9 +156,9 @@ export function ReviewModal({ isOpen, onClose, tripId, onSubmit }: ReviewModalPr
                       destination: trip.destination,
                       startDate: trip.startDate,
                       endDate: trip.endDate,
-                      buddyName: travelBuddies[selectedBuddyIndex].name,
-                      buddyImage: travelBuddies[selectedBuddyIndex].image,
-                      buddyUsername: travelBuddies[selectedBuddyIndex].username
+                      buddyName: uniqueMembers[selectedBuddyIndex].name,
+                      buddyImage: uniqueMembers[selectedBuddyIndex].image,
+                      buddyUsername: uniqueMembers[selectedBuddyIndex].username
                     }}
                     onSubmit={handleSubmit}
                   />
