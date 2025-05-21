@@ -1,21 +1,38 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../../lib/api";
-import { timeAgo } from "../../utils/timeago";
 import { getAvatarNumber } from "../../context/UserContext";
+import { api } from "../../lib/api";
 
-interface TripRequest {
+interface Participant {
   id: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  trip_id: string;
-  username: string;
-  avatar_url: string;
-  name: string;
-  location: string;
-  start_date?: string;
-  end_date?: string;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    name: string;
+    verified: boolean;
+    certifications: string[];
+    location: string;
+    website: string;
+    languages: string[];
+    interests: string[];
+    bio: string;
+    about: string | null;
+    phone: string | null;
+    friendship_status: string;
+    total_trips: number;
+    travel_days: number;
+    connections: number;
+    profile_image: boolean;
+    member_since: string;
+  };
+  trip: {
+    id: string;
+    title: string;
+    location: string;
+    start_date: string;
+    end_date: string;
+  };
 }
 
 interface TripRequestDropdownProps {
@@ -23,182 +40,38 @@ interface TripRequestDropdownProps {
   onClose: () => void;
 }
 
-export function TripRequestDropdown({ isOpen, onClose }: TripRequestDropdownProps) {
-  const [requests, setRequests] = useState<TripRequest[]>([]);
+export function TripRequestDropdown({ isOpen }: TripRequestDropdownProps) {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
-    // MOCK DATA for testing dropdown UI
-    setRequests([
-      {
-      id: '1',
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      trip_id: 'T2025-001',
-      username: 'janedoe',
-      avatar_url: '',
-      name: 'Jane Doe',
-      location: 'Kathmandu, Nepal',
-      start_date: '2025-06-01',
-      end_date: '2025-06-10',
-      },
-      {
-      id: '2',
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      trip_id: 'T2025-002',
-      username: 'johnsmith',
-      avatar_url: '',
-      name: 'John Smith',
-      location: 'Pokhara, Nepal',
-      start_date: '2025-07-15',
-      end_date: '2025-07-22',
-      },
-      {
-      id: '3',
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      trip_id: 'T2025-003',
-      username: 'alicew',
-      avatar_url: '',
-      name: 'Alice Williams',
-      location: 'Lalitpur, Nepal',
-      start_date: '2025-08-05',
-      end_date: '2025-08-12',
-      },
-      {
-      id: '4',
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      trip_id: 'T2025-004',
-      username: 'boblee',
-      avatar_url: '',
-      name: 'Bob Lee',
-      location: 'Chitwan, Nepal',
-      start_date: '2025-09-01',
-      end_date: '2025-09-07',
-      },
-      {
-      id: '5',
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      trip_id: 'T2025-005',
-      username: 'carolb',
-      avatar_url: '',
-      name: 'Carol Brown',
-      location: 'Bhaktapur, Nepal',
-      start_date: '2025-10-10',
-      end_date: '2025-10-18',
-      },
-      {
-      id: '6',
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      trip_id: 'T2025-006',
-      username: 'davidk',
-      avatar_url: '',
-      name: 'David Kim',
-      location: 'Lumbini, Nepal',
-      start_date: '2025-11-02',
-      end_date: '2025-11-09',
-      },
-      {
-      id: '7',
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      trip_id: 'T2025-007',
-      username: 'emilyr',
-      avatar_url: '',
-      name: 'Emily Rodriguez',
-      location: 'Bandipur, Nepal',
-      start_date: '2025-12-15',
-      end_date: '2025-12-22',
-      },
-      {
-      id: '8',
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      trip_id: 'T2025-008',
-      username: 'frankm',
-      avatar_url: '',
-      name: 'Frank Miller',
-      location: 'Nagarkot, Nepal',
-      start_date: '2026-01-05',
-      end_date: '2026-01-12',
-      },
-      {
-      id: '9',
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      trip_id: 'T2025-009',
-      username: 'graceh',
-      avatar_url: '',
-      name: 'Grace Hall',
-      location: 'Dhulikhel, Nepal',
-      start_date: '2026-02-10',
-      end_date: '2026-02-17',
-      },
-      {
-      id: '10',
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      trip_id: 'T2025-010',
-      username: 'henryp',
-      avatar_url: '',
-      name: 'Henry Patel',
-      location: 'Gorkha, Nepal',
-      start_date: '2026-03-01',
-      end_date: '2026-03-08',
-      },
-    ]);
-    // api
-    //   .get<{ data: TripRequest[] }>(`/trips/requests/received`)
-    //   .then((res) => {
-    //     const data = res.data.data.map((item) => ({
-    //       id: item.id,
-    //       status: item.status,
-    //       created_at: item.created_at,
-    //       updated_at: item.updated_at,
-    //       trip_id: item.trip_id,
-    //       username: item.username,
-    //       avatar_url: item.avatar_url,
-    //       name: item.name,
-    //       location: item.location,
-    //     }));
-    //     setRequests(data);
-    //   });
+    setLoading(true);
+    api
+      .get("/list_pending_participants")
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setParticipants(res.data);
+        } else if (Array.isArray(res.data.participants)) {
+          setParticipants(res.data.participants);
+        } else {
+          setParticipants([]);
+        }
+      })
+      .catch(() => setParticipants([]))
+      .finally(() => setLoading(false));
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleAccept = async (id: string) => {
-    const previousRequests = [...requests];
-    setRequests((prev) => prev.filter((r) => r.id !== id));
-    try {
-      await api.post(`/trips/requests/${id}/accept`);
-    } catch {
-      setRequests(previousRequests);
-    }
+  const handleAccept = (id: string) => {
+    setParticipants((p) => p.filter((item) => item.id !== id));
+    // Optionally: await api.post(`/trips/requests/${id}/accept`);
   };
 
-  const handleReject = async (id: string) => {
-    const previousRequests = [...requests];
-    setRequests((prev) => prev.filter((r) => r.id !== id));
-    try {
-      await api.delete(`/trips/requests/${id}`);
-    } catch {
-      setRequests(previousRequests);
-    }
+  const handleReject = (id: string) => {
+    setParticipants((p) => p.filter((item) => item.id !== id));
+    // Optionally: await api.delete(`/trips/requests/${id}`);
   };
 
   return (
@@ -206,60 +79,91 @@ export function TripRequestDropdown({ isOpen, onClose }: TripRequestDropdownProp
       <div className="p-4 border-b">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold">Trip Join Requests</h3>
-          <span className="text-sm text-brand-orange">{requests.length} new</span>
+          <span className="text-sm text-brand-orange">
+            {participants.length} new
+          </span>
         </div>
       </div>
       <div className="max-h-96 overflow-y-auto">
-        {requests.length === 0 ? (
+        {loading ? (
+          <div className="p-4 text-sm text-gray-500">Loading...</div>
+        ) : participants.length === 0 ? (
           <div className="p-4 text-sm text-gray-500">No trip requests.</div>
         ) : (
-          requests.map((request) => (
+          participants.map((p) => (
             <div
-              key={request.id}
+              key={p.id}
               className="p-4 border-b last:border-b-0 hover:bg-gray-50"
             >
               <div className="flex items-start gap-3">
-                <Link to={`/${request.username}`} key={request.id}>
+                <Link to={`/${p.user?.username ?? ""}`}>
                   <img
                     src={
-                      request.avatar_url ||
-                      `/avatars/${getAvatarNumber(request.username)}.png`
+                      typeof p.user?.profile_image === "string" &&
+                      p.user.profile_image
+                        ? p.user.profile_image
+                        : `/avatars/${getAvatarNumber(p.user.id)}.png`
                     }
-                    alt={request.name}
+                    alt={p.user?.name ?? ""}
                     className="w-12 h-12 rounded-full object-cover"
                   />
                 </Link>
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <Link to={`/${request.username}`} key={request.id}>
-                      <h4 className="font-medium text-base">{request.name}</h4>
+                    <Link to={`/${p.user.username}`}>
+                      <h4 className="font-medium text-base">{p.user.name}</h4>
                     </Link>
                     <span className="text-xs text-gray-500">
-                      {timeAgo(request.created_at)}
+                      {p.user.member_since}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full font-mono">Trip ID: {request.trip_id}</span>
-                    <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full">{request.location}</span>
+                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full font-mono">
+                      {p.trip.title}
+                    </span>
+                    <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full">
+                      {p.trip.location}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs text-gray-500">Trip Dates:</span>
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-800 bg-orange-50 px-2 py-0.5 rounded-full">
-                      <svg className="w-3 h-3 text-orange-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                      {request.start_date ? new Date(request.start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '??'}
+                      <svg
+                        className="w-3 h-3 text-orange-400"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <path d="M16 2v4M8 2v4M3 10h18" />
+                      </svg>
+                      {p.trip.start_date
+                        ? new Date(p.trip.start_date).toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        : "??"}
                       <span className="mx-1 text-gray-400">→</span>
-                      {request.end_date ? new Date(request.end_date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '??'}
+                      {p.trip.end_date
+                        ? new Date(p.trip.end_date).toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        : "??"}
                     </span>
                   </div>
                   <div className="flex gap-2 mt-2">
                     <button
-                      onClick={() => handleAccept(request.id)}
+                      onClick={() => handleAccept(p.id)}
                       className="flex-1 bg-brand-orange text-white px-3 py-1 rounded-full text-sm hover:bg-brand-orange/90 transition-colors"
                     >
                       Accept
                     </button>
                     <button
-                      onClick={() => handleReject(request.id)}
+                      onClick={() => handleReject(p.id)}
                       className="flex-1 border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-50 transition-colors"
                     >
                       Reject
