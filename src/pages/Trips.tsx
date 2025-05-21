@@ -148,6 +148,7 @@ export default function Trips() {
   const [selectedConnection, setSelectedConnection] = useState<{
     id: number;
     name: string;
+    username: string;
   } | null>(null);
   const [expandedSections, setExpandedSections] = useState({
     upcomingTrips: false,
@@ -214,16 +215,24 @@ export default function Trips() {
     setOpenMenuId(openMenuId === id ? null : id);
   };
 
-  const handleDisconnect = (connection: { id: number; name: string }) => {
+  // Show confirmation dialog for disconnect
+  const handleDisconnect = (connection: { id: number; name: string; username: string }) => {
     setSelectedConnection(connection);
     setShowDisconnectConfirmation(true);
   };
 
-  const confirmDisconnect = () => {
+  // Actually disconnect the friendship using username
+  const confirmDisconnect = async () => {
     if (selectedConnection) {
-      console.log(`Disconnecting from ${selectedConnection.name}`);
-      // Add disconnect logic here
+      try {
+        await api.delete(`/friendships/${selectedConnection.username}`);
+        // Remove from UI
+        setConnectionsData((prev) => prev.filter((c: any) => c.id !== selectedConnection.id));
+      } catch (error) {
+        console.error(`Failed to disconnect from ${selectedConnection.name}:`, error);
+      }
       setShowDisconnectConfirmation(false);
+      setSelectedConnection(null);
     }
   };
 
@@ -337,6 +346,7 @@ export default function Trips() {
                       handleDisconnect({
                         id: connection.id,
                         name: connection.name,
+                        username: connection.username,
                       });
                       setOpenMenuId(null);
                     }}
@@ -610,9 +620,9 @@ export default function Trips() {
         onConfirm={confirmDisconnect}
         title="Confirm Disconnect"
         message={
-          selectedConnection
+          selectedConnection && selectedConnection.name
             ? `Are you sure you want to disconnect from ${selectedConnection.name}? This action cannot be undone.`
-            : ""
+            : "Are you sure you want to disconnect? This action cannot be undone."
         }
         confirmText="Disconnect"
         type="danger"
