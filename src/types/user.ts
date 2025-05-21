@@ -48,12 +48,22 @@ export interface UserPhoto {
 }
 
 export interface UserReview {
-    id: number;
-    destination: string;
-    rating: number;
-    comment: string;
-    date: string;
-    image: string;
+  id: string;
+  reviewer: {
+    id: string;
+    username: string;
+    name: string;
+  };
+  value: number;
+  overall_experience: number;
+  communication: number;
+  reliability: number;
+  travel_compatibility: number;
+  respect_consideration: number;
+  review: string;
+  recommend: boolean;
+  image_urls: string[];
+  created_at: string;
 }
 
 export interface UserGuide {

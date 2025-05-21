@@ -225,15 +225,9 @@ export default function UserProfile() {
                 element={<UserPhotos username={username} />}
               />
               <Route
-                path="/reviews"
-                element={
-                  <UserReviews
-                    reviews={reviews}
-                    isLoading={loading.reviews}
-                    error={error.reviews}
-                  />
-                }
-              />
+            path="/reviews"
+            element={<UserReviews username={username} />}
+          />
               <Route
                 path="/guides"
                 element={

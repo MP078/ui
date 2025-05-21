@@ -6,13 +6,13 @@ const mockUsers: Record<string, UserProfile> = {
     id: '1',
     name: 'Sarah Chen',
     username: 'sarahchen',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
-    coverImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b',
+    image_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
+    // coverImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b',
     location: 'San Francisco, CA',
     bio: 'Adventure seeker | Photography Enthusiast | Mountain Lover',
     verified: true,
-    isOnline: false,
-    lastActive: '2 hours ago',
+    // isOnline: false,
+    // lastActive: '2 hours ago',
     email: 'sarah.chen@example.com',
     website: 'www.sarahchen.travel',
     languages: ['English (Native)', 'French (Fluent)', 'Nepali (Basic)'],
@@ -22,33 +22,33 @@ const mockUsers: Record<string, UserProfile> = {
       'Wilderness First Responder',
       'Advanced Photography - National Geographic'
     ],
-    stats: {
-      trips: 45,
-      guides: 10,
-      travelDays: 100,
-      places: 13,
-      connections: 5000
-    }
+    // stats: {
+    //   trips: 45,
+    //   guides: 10,
+    //   travelDays: 100,
+    //   places: 13,
+    //   connections: 5000
+    // }
   },
   '2': {
     id: '2',
     name: 'Mike Johnson',
     username: 'mikej',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
-    coverImage: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800',
+    image_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
+    // coverImage: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800',
     location: 'London, UK',
     bio: 'Travel writer | Food enthusiast | History buff',
     verified: true,
-    isOnline: true,
+    // isOnline: true,
     languages: ['English (Native)', 'Spanish (Conversational)'],
     interests: ['Urban Exploration', 'Food Tourism', 'Historical Sites', 'Museums', 'Architecture'],
-    stats: {
-      trips: 32,
-      guides: 5,
-      travelDays: 78,
-      places: 9,
-      connections: 3200
-    }
+    // stats: {
+    //   trips: 32,
+    //   guides: 5,
+    //   travelDays: 78,
+    //   places: 9,
+    //   connections: 3200
+    // }
   }
 };
 
@@ -173,30 +173,60 @@ const mockPhotos: Record<string, UserPhoto[]> = {
 const mockReviews: Record<string, UserReview[]> = {
   '1': [
     {
-      id: 1,
-      destination: 'Everest Base Camp Trek',
-      rating: 5,
-      comment: "An incredible journey with breathtaking views. The guide was extremely knowledgeable and helpful.",
-      date: "March 15, 2024",
-      image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+      id: 'r1',
+      reviewer: {
+        id: 'u2',
+        username: 'mikej',
+        name: 'Mike Johnson',
+      },
+      value: 5,
+      overall_experience: 5,
+      communication: 5,
+      reliability: 5,
+      travel_compatibility: 5,
+      respect_consideration: 5,
+      review: "An incredible journey with breathtaking views. The guide was extremely knowledgeable and helpful.",
+      recommend: true,
+      image_urls: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa"],
+      created_at: "2024-03-15T10:00:00.000Z",
     },
     {
-      id: 2,
-      destination: 'Annapurna Circuit',
-      rating: 4,
-      comment: "Beautiful trek with amazing mountain views. Well organized and great support team.",
-      date: "February 1, 2024",
-      image: "https://images.unsplash.com/photo-1585938389612-a552a28d6914"
+      id: 'r2',
+      reviewer: {
+        id: 'u3',
+        username: 'adventure_gal',
+        name: 'Anna Smith',
+      },
+      value: 4,
+      overall_experience: 4,
+      communication: 4,
+      reliability: 4,
+      travel_compatibility: 4,
+      respect_consideration: 4,
+      review: "Beautiful trek with amazing mountain views. Well organized and great support team.",
+      recommend: true,
+      image_urls: ["https://images.unsplash.com/photo-1585938389612-a552a28d6914"],
+      created_at: "2024-02-01T12:00:00.000Z",
     }
   ],
   '2': [
     {
-      id: 1,
-      destination: 'Rome City Tour',
-      rating: 5,
-      comment: "Incredible historical sites and amazing food. The local guide was very knowledgeable.",
-      date: "April 10, 2024",
-      image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5"
+      id: 'r3',
+      reviewer: {
+        id: 'u1',
+        username: 'sarahchen',
+        name: 'Sarah Chen',
+      },
+      value: 5,
+      overall_experience: 5,
+      communication: 5,
+      reliability: 5,
+      travel_compatibility: 5,
+      respect_consideration: 5,
+      review: "Incredible historical sites and amazing food. The local guide was very knowledgeable.",
+      recommend: true,
+      image_urls: ["https://images.unsplash.com/photo-1552832230-c0197dd311b5"],
+      created_at: "2024-04-10T09:00:00.000Z",
     }
   ]
 };
