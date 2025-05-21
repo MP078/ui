@@ -64,14 +64,24 @@ export function TripRequestDropdown({ isOpen }: TripRequestDropdownProps) {
 
   if (!isOpen) return null;
 
-  const handleAccept = (id: string) => {
+  const handleAccept = async (id: string, tripId: string) => {
+    const prev = [...participants];
     setParticipants((p) => p.filter((item) => item.id !== id));
-    // Optionally: await api.post(`/trips/requests/${id}/accept`);
+    try {
+      await api.post(`/trips/${tripId}/trip_participations/${id}/approve`);
+    } catch {
+      setParticipants(prev);
+    }
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string, tripId: string) => {
+    const prev = [...participants];
     setParticipants((p) => p.filter((item) => item.id !== id));
-    // Optionally: await api.delete(`/trips/requests/${id}`);
+    try {
+      await api.delete(`/trips/${tripId}/trip_participations/${id}`);
+    } catch {
+      setParticipants(prev);
+    }
   };
 
   return (
@@ -157,13 +167,13 @@ export function TripRequestDropdown({ isOpen }: TripRequestDropdownProps) {
                   </div>
                   <div className="flex gap-2 mt-2">
                     <button
-                      onClick={() => handleAccept(p.id)}
+                      onClick={() => handleAccept(p.id, p.trip.id)}
                       className="flex-1 bg-brand-orange text-white px-3 py-1 rounded-full text-sm hover:bg-brand-orange/90 transition-colors"
                     >
                       Accept
                     </button>
                     <button
-                      onClick={() => handleReject(p.id)}
+                      onClick={() => handleReject(p.id, p.trip.id)}
                       className="flex-1 border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-50 transition-colors"
                     >
                       Reject
