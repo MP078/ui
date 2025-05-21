@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.4",
     "@rails/actioncable": "^8.0.200",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
