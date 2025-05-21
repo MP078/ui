@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Star, Heart, Share2, Flag } from 'lucide-react';
-import { getAvatarNumber } from '../../context/UserContext';
+
+import { getAvatarUrl } from '../../utils/avatar';
 
 
 interface Review {
@@ -31,13 +32,11 @@ export function ReviewList({ reviews }: ReviewListProps) {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <img
-                src={
-                  review.author.image && review.author.image.trim() !== ''
-                    ? review.author.image
-                    : `/avatars/${getAvatarNumber(
-                        review.author.id || review.author.name || '1'
-                      )}.png`
-                }
+                src={getAvatarUrl({
+                  id: review.author.id,
+                  username: review.author.name,
+                  image_url: review.author.image
+                })}
                 alt={review.author.name}
                 className="w-12 h-12 rounded-full object-cover"
               />

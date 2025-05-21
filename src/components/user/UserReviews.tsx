@@ -3,20 +3,17 @@ import { Star, X } from 'lucide-react';
 import clsx from 'clsx';
 import { Dialog } from '@headlessui/react';
 import { api } from '../../lib/api';
-import { getAvatarNumber } from '../../context/UserContext';
+import { getAvatarUrl } from '../../utils/avatar';
 import { ImageCarousel } from './ImageCarousel';
 
-function getAvatarUrl({ id, username, image_url, profile_image }: { id?: string; username?: string; image_url?: string; profile_image?: string }) {
-  if (image_url) return image_url;
-  if (profile_image) return profile_image;
-  if (id) return `/avatars/${getAvatarNumber(id.toString())}.png`;
-  if (username) return `/avatars/${getAvatarNumber(username)}.png`;
-  return 'https://via.placeholder.com/64';
-}
+
 
 interface Reviewer {
+  id?: string;
   username: string;
   name: string;
+  image_url?: string;
+  profile_image?: string;
 }
 
 interface UserReview {
@@ -73,15 +70,22 @@ export function UserReviews({ username }: UserReviewsProps) {
             [reviewerUsername]: getAvatarUrl({
               id: user.id,
               username: user.username,
-              image_url: user.image_url,
-              profile_image: user.profile_image,
+              image_url: user.image_url || user.profile_image,
+              profile_image: user.profile_image
             })
           }));
         })
         .catch(() => {
+          // Try to use info from the review itself as fallback
+          const reviewer = reviews.find(r => r.reviewer?.username === reviewerUsername)?.reviewer;
           setReviewerAvatars(prev => ({
             ...prev,
-            [reviewerUsername]: getAvatarUrl({ username: reviewerUsername })
+            [reviewerUsername]: getAvatarUrl({
+              id: reviewer?.id,
+              username: reviewerUsername,
+              image_url: reviewer?.image_url || reviewer?.profile_image,
+              profile_image: reviewer?.profile_image
+            })
           }));
         })
         .finally(() => {
@@ -98,8 +102,16 @@ export function UserReviews({ username }: UserReviewsProps) {
       {reviews.length === 0 && <div className="text-gray-500">No reviews found.</div>}
       {reviews.map((review) => {
         const reviewerUsername = review.reviewer?.username;
-        const avatarUrl = reviewerUsername ? reviewerAvatars[reviewerUsername] : undefined;
-        const image = avatarUrl || 'https://via.placeholder.com/64';
+        // Always try to use the freshest info for avatar
+        const avatarUrl =
+          getAvatarUrl({
+            id: review.reviewer?.id,
+            username: review.reviewer?.username,
+            image_url: review.reviewer?.image_url || review.reviewer?.profile_image,
+            profile_image: review.reviewer?.profile_image
+          }) ||
+          (reviewerUsername ? reviewerAvatars[reviewerUsername] : undefined) ||
+          'https://via.placeholder.com/64';
 
         return (
           <div
@@ -109,7 +121,7 @@ export function UserReviews({ username }: UserReviewsProps) {
           >
             <div className="flex gap-4 items-start">
               <img
-                src={image}
+                src={avatarUrl}
                 alt="User avatar"
                 className="w-16 h-16 rounded-full object-cover border border-gray-200"
               />
@@ -170,7 +182,16 @@ export function UserReviews({ username }: UserReviewsProps) {
                 {/* Reviewer Avatar + Name */}
                 <div className="flex items-center gap-3">
                   <img
-                    src={reviewerAvatars[selectedReview.reviewer.username] || 'https://via.placeholder.com/64'}
+                    src={
+                      getAvatarUrl({
+                        id: selectedReview.reviewer?.id,
+                        username: selectedReview.reviewer?.username,
+                        image_url: selectedReview.reviewer?.image_url || selectedReview.reviewer?.profile_image,
+                        profile_image: selectedReview.reviewer?.profile_image
+                      }) ||
+                      (selectedReview.reviewer?.username ? reviewerAvatars[selectedReview.reviewer.username] : undefined) ||
+                      'https://via.placeholder.com/64'
+                    }
                     alt="Reviewer"
                     className="w-10 h-10 rounded-full object-cover border border-gray-200"
                   />

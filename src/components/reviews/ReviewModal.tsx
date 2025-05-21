@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { ReviewForm } from './ReviewForm';
-import { getAvatarNumber } from '../../context/UserContext';
+
+import { getAvatarUrl } from '../../utils/avatar';
 import { travelHistory } from '../../data/upcomingtrips';
 
 interface ReviewModalProps {
@@ -32,23 +33,23 @@ export function ReviewModal({ isOpen, onClose, trip, currentUserId, onSubmit }: 
       id: m.id,
       name: m.name || m.username || m.displayName || 'Unknown',
       username: m.username || '',
-      image:
-        m.image_url && m.image_url.trim() !== ''
-          ? m.image_url
-          : m.image && m.image.trim() !== ''
-            ? m.image
-            : `/avatars/${getAvatarNumber(m.id ? String(m.id) : m.username || m.name || '1')}.png`,
+      image: getAvatarUrl({
+        id: m.id,
+        username: m.username || m.name || '',
+        image_url: m.image_url,
+        profile_image: m.image
+      })
     }))),
     ...((trip.organizers || []).map((m: any) => ({
       id: m.id,
       name: m.name || m.username || m.displayName || 'Unknown',
       username: m.username || '',
-      image:
-        m.image_url && m.image_url.trim() !== ''
-          ? m.image_url
-          : m.image && m.image.trim() !== ''
-            ? m.image
-            : `/avatars/${getAvatarNumber(m.id ? String(m.id) : m.username || m.name || '1')}.png`,
+      image: getAvatarUrl({
+        id: m.id,
+        username: m.username || m.name || '',
+        image_url: m.image_url,
+        profile_image: m.image
+      })
     })))
   ];
   // Remove duplicates by id and filter out current user
@@ -109,11 +110,11 @@ export function ReviewModal({ isOpen, onClose, trip, currentUserId, onSubmit }: 
                       onClick={() => setSelectedBuddyIndex(index)}
                       className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:border-brand-orange/50 hover:bg-gray-50 transition-all text-left"
                     >
-                      <img
-                        src={buddy.image}
-                        alt={buddy.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
+                  <img
+                    src={buddy.image}
+                    alt={buddy.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
                       <div>
                         <div className="font-medium">{buddy.name}</div>
                         <div className="text-sm text-gray-500">Travel Partner</div>
