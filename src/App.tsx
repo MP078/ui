@@ -17,6 +17,7 @@ import Feed from "./pages/Feed";
 import { UserContext } from "./context/UserContext";
 import TermsPage from "./pages/Termspage";
 import PrivacyPage from "./pages/PrivacyPage";
+import TripRequests from "./pages/TripRequests";
 
 function App() {
   const location = useLocation();
@@ -108,7 +109,7 @@ function App() {
             path="/trip-requests"
             element={
               authenticated ? (
-                <ConnectionRequests />
+                <TripRequests />
               ) : (
                 <Navigate to="/" replace />
               )
