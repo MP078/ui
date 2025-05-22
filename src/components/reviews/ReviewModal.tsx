@@ -33,12 +33,7 @@ export function ReviewModal({ isOpen, onClose, trip, currentUserId, onSubmit }: 
       id: m.id,
       name: m.name || m.username || m.displayName || 'Unknown',
       username: m.username || '',
-      image: getAvatarUrl({
-        id: m.id,
-        username: m.username || m.name || '',
-        image_url: m.image_url,
-        profile_image: m.image
-      })
+      image: m.avatar_url
     }))),
     ...((trip.organizers || []).map((m: any) => ({
       id: m.id,
